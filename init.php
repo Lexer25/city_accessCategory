@@ -1,5 +1,5 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-defined('DOOR_VERSION') OR define('DOOR_VERSION', '2.0.0');
+defined('DOOR_VERSION') OR define('DOOR_VERSION', '3.0.1');
 
 Kohana::$config->load('menu')
     ->set('accessCategory', array(

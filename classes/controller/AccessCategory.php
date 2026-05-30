@@ -7,20 +7,37 @@ class Controller_AccessCategory  extends Controller_Template {
 			parent::before();
 			$session = Session::instance();
 			
-			
 	}
 	
 	
 	public function action_index()
 	{
-		$acList=Model::factory('accessCategory')-getAccessCategoryList();
+		$acList=Model::factory('accessCategory')->getAccessCategoryList();
 		$content = View::factory('accessCategory/index', array(
 			'acList'=>$acList,
 			));
         $this->template->content = $content;
 	}
 	 
-	 
+	 public function action_add()
+	{
+			$content = View::factory('accessCategory/add');
+			$this->template->content = $content;
+		}
+
+		public function action_edit($id = false)
+		{
+			$id = $this->request->param('id');
+			// Логика редактирования
+		}
+
+		public function action_delete($id = false)
+		{
+			$id = $this->request->param('id');
+			// Логика удаления
+		}
+
+
 	 public function action_find()
 	 {
 	 
