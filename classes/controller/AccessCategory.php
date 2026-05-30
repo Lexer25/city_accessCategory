@@ -17,70 +17,88 @@ class Controller_AccessCategory extends Controller_Template {
         $this->template->content = $content;
     }
     
-    /**
-     * Редактирование категории доступа
-     */
-    public function action_edit()
-    {
-        $id = $this->request->param('id');
-        
-        if ($id === NULL) {
-            $this->redirect('accessCategory');
-        }
-        
-        // Получаем данные категории
-        $category = Model::factory('accessCategory')->getAccessCategoryById($id);
-        
-        if (empty($category)) {
-            $this->redirect('accessCategory');
-        }
-        
-        // Обработка POST запроса
-        if ($this->request->method() == HTTP_Request::POST) {
-            $post = $this->request->post();
-            
-            $name = Arr::get($post, 'name');
-            $guid = Arr::get($post, 'guid');
-            
-            // Валидация
-            $errors = array();
-            if (empty($name)) {
-                $errors['name'] = __('Название категории обязательно');
-            }
-            
-            if (empty($errors)) {
-                // Обновляем категорию
-                $result = Model::factory('accessCategory')->updateAccessCategory($id, $name, $guid);
-                
-                if ($result) {
-                    // Устанавливаем сообщение об успехе
-                    Session::instance()->set('message', __('Категория доступа успешно обновлена'));
-                    Session::instance()->set('message_type', 'success');
-                } else {
-                    Session::instance()->set('message', __('Ошибка при обновлении категории доступа'));
-                    Session::instance()->set('message_type', 'danger');
-                }
-                
-                $this->redirect('accessCategory');
-            }
-            
-            // Если есть ошибки, показываем форму с ошибками
-            $content = View::factory('accessCategory/edit', array(
-                'category' => $category,
-                'errors' => $errors,
-                'post' => $post,
-            ));
-        } else {
-            // GET запрос - показываем форму
-            $content = View::factory('accessCategory/edit', array(
-                'category' => $category,
-                'errors' => array(),
-                'post' => array(),
-            ));
-        }
-        
-        $this->template->content = $content;
-    }
+		  /**
+		 * Редактирование категории доступа
+		 */
+		public function action_edit()
+		{
+			//$this->template->full_width = true;
+			$id = $this->request->param('id');
+			
+			if ($id === NULL) {
+				$this->redirect('accessCategory');
+			}
+			
+			// Получаем данные категории
+			$category = Model::factory('accessCategory')->getAccessCategoryById($id);
+			
+			if (empty($category)) {
+				$this->redirect('accessCategory');
+			}
+			
+			// Получаем все точки прохода
+			$allPoints = Model::factory('accessCategory')->getAllAccessPoints();
+			
+			// Получаем ID уже привязанных точек
+			$assignedPoints = Model::factory('accessCategory')->getAssignedAccessPointsIds($id);
+			
+			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
+		
+			// Обработка POST запроса
+			if ($this->request->method() == HTTP_Request::POST) {
+				$post = $this->request->post();
+				
+				$name = Arr::get($post, 'name');
+				$guid = Arr::get($post, 'guid');
+				$selectedPoints = Arr::get($post, 'access_points', array());
+				
+				// Валидация
+				$errors = array();
+				if (empty($name)) {
+					$errors['name'] = __('Название категории обязательно');
+				}
+				
+				if (empty($errors)) {
+					// Обновляем категорию
+					$result = Model::factory('accessCategory')->updateAccessCategory($id, $name, $guid);
+					
+					// Сохраняем точки прохода
+					$pointsResult = Model::factory('accessCategory')->saveAccessPoints($id, $selectedPoints);
+					
+					if ($result && $pointsResult) {
+						Session::instance()->set('message', __('Категория доступа успешно обновлена'));
+						Session::instance()->set('message_type', 'success');
+					} else {
+						Session::instance()->set('message', __('Ошибка при обновлении категории доступа'));
+						Session::instance()->set('message_type', 'danger');
+					}
+					
+					$this->redirect('accessCategory');
+				}
+				
+				// Если есть ошибки, показываем форму с ошибками
+				$content = View::factory('accessCategory/edit', array(
+					'category' => $category,
+					'allPoints' => $allPoints,
+					'assignedPoints' => $assignedPoints,
+					'assignedPointsWithData' => $assignedPointsWithData, 
+					'errors' => $errors,
+					'post' => $post,
+				));
+			} else {
+				// GET запрос - показываем форму
+				$content = View::factory('accessCategory/edit', array(
+					'category' => $category,
+					'allPoints' => $allPoints,
+					'assignedPoints' => $assignedPoints,
+					'assignedPointsWithData' => $assignedPointsWithData,
+					'errors' => array(),
+					'post' => array(),
+				));
+			}
+			
+			$this->template->content = $content;
+		}
     
     /**
      * Добавление новой категории доступа

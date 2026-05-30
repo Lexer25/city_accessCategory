@@ -34,7 +34,7 @@ class Model_AccessCategory extends Model
      */
     public function getAccessCategoryList()
     {
-        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp, an.guid FROM accessname an';
+        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp FROM accessname an';
 
         $query = DB::query(Database::SELECT, $sql)
             ->execute(Database::instance('fb'))
@@ -48,7 +48,7 @@ class Model_AccessCategory extends Model
      */
     public function getAccessCategoryById($id)
     {
-        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp, an.guid 
+        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp
                 FROM accessname an 
                 WHERE an.id_accessname = ' . intval($id);
 
@@ -69,7 +69,7 @@ class Model_AccessCategory extends Model
      */
     public function getAccessPointsByCategoryId($id_accessname)
     {
-        $sql = 'SELECT d.id_dev, d.name 
+        $sql = 'SELECT d.id_dev, d.name, a.id_timezone 
                 FROM access a
                 JOIN device d ON a.id_dev = d.id_dev
                 WHERE a.id_accessname = ' . intval($id_accessname);
@@ -79,6 +79,72 @@ class Model_AccessCategory extends Model
             ->as_array();
         
         return $this->convertToUtf8($query);
+    }
+    
+    /**
+     * Получить все точки прохода (устройства с ридером)
+     */
+    public function getAllAccessPoints()
+    {
+        $sql = 'SELECT d.id_dev, d.name 
+                FROM device d 
+                WHERE d.id_reader IS NOT NULL
+                ORDER BY d.name';
+        
+        $query = DB::query(Database::SELECT, $sql)
+            ->execute(Database::instance('fb'))
+            ->as_array();
+        
+        return $this->convertToUtf8($query);
+    }
+    
+    /**
+     * Получить ID точек прохода, уже привязанных к категории
+     */
+    public function getAssignedAccessPointsIds($id_accessname)
+    {
+        $sql = 'SELECT a.id_dev 
+                FROM access a
+                WHERE a.id_accessname = ' . intval($id_accessname);
+        
+        $query = DB::query(Database::SELECT, $sql)
+            ->execute(Database::instance('fb'))
+            ->as_array();
+        
+        $ids = array();
+        foreach ($query as $row) {
+            $ids[] = $row['ID_DEV'];
+        }
+        
+        return $ids;
+    }
+    
+    /**
+     * Сохранить точки прохода для категории
+     */
+    public function saveAccessPoints($id_accessname, $selectedPoints)
+    {
+        try {
+            // Начинаем транзакцию
+            DB::query(Database::DELETE, "DELETE FROM access WHERE id_accessname = " . intval($id_accessname))
+                ->execute(Database::instance('fb'));
+            
+            // Добавляем выбранные точки
+            if (!empty($selectedPoints)) {
+                foreach ($selectedPoints as $id_dev) {
+                    $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
+                            VALUES ((SELECT COALESCE(MAX(id_access), 0) + 1 FROM access), 1, " . intval($id_accessname) . ", " . intval($id_dev) . ", NULL)";
+                    
+                    DB::query(Database::INSERT, $sql)
+                        ->execute(Database::instance('fb'));
+                }
+            }
+            
+            return true;
+        } catch (Exception $e) {
+            Kohana::$log->add(Log::ERROR, 'Error saving access points: ' . $e->getMessage());
+            return false;
+        }
     }
     
     /**
@@ -123,10 +189,15 @@ class Model_AccessCategory extends Model
                 VALUES ((SELECT COALESCE(MAX(id_accessname), 0) + 1 FROM accessname), '{$nameForDb}', '{$guid}', CURRENT_TIMESTAMP)";
         
         try {
-            DB::query(Database::INSERT, $sql)
+            $result = DB::query(Database::INSERT, $sql)
                 ->execute(Database::instance('fb'));
             
-            return true;
+            // Получаем последний вставленный ID
+            $lastId = DB::query(Database::SELECT, "SELECT MAX(id_accessname) as last_id FROM accessname")
+                ->execute(Database::instance('fb'))
+                ->as_array();
+            
+            return $lastId[0]['LAST_ID'];
         } catch (Exception $e) {
             Kohana::$log->add(Log::ERROR, 'Error adding access category: ' . $e->getMessage());
             return false;
@@ -138,9 +209,14 @@ class Model_AccessCategory extends Model
      */
     public function deleteAccessCategory($id)
     {
-        $sql = "DELETE FROM accessname WHERE id_accessname = " . intval($id);
-        
         try {
+            // Сначала удаляем связи с точками прохода
+            DB::query(Database::DELETE, "DELETE FROM access WHERE id_accessname = " . intval($id))
+                ->execute(Database::instance('fb'));
+            
+            // Затем удаляем саму категорию
+            $sql = "DELETE FROM accessname WHERE id_accessname = " . intval($id);
+            
             DB::query(Database::DELETE, $sql)
                 ->execute(Database::instance('fb'));
             
