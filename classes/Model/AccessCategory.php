@@ -64,22 +64,23 @@ class Model_AccessCategory extends Model
         return null;
     }
     
-    /**
-     * Получить список точек прохода по ID категории доступа
-     */
-    public function getAccessPointsByCategoryId($id_accessname)
-    {
-        $sql = 'SELECT d.id_dev, d.name, a.id_timezone 
-                FROM access a
-                JOIN device d ON a.id_dev = d.id_dev
-                WHERE a.id_accessname = ' . intval($id_accessname);
-        
-        $query = DB::query(Database::SELECT, $sql)
-            ->execute(Database::instance('fb'))
-            ->as_array();
-        
-        return $this->convertToUtf8($query);
-    }
+		/**
+		 * Получить список точек прохода по ID категории доступа с данными timezone
+		 */
+		public function getAccessPointsByCategoryId($id_accessname)
+		{
+			$sql = 'SELECT d.id_dev, d.name, a.id_timezone, t.name as timezone_name, t.timestart, t.timeend, t.flag
+					FROM access a
+					JOIN device d ON a.id_dev = d.id_dev
+					LEFT JOIN timezone t ON a.id_timezone = t.id_timezone
+					WHERE a.id_accessname = ' . intval($id_accessname);
+			
+			$query = DB::query(Database::SELECT, $sql)
+				->execute(Database::instance('fb'))
+				->as_array();
+			
+			return $this->convertToUtf8($query);
+		}
     
     /**
      * Получить все точки прохода (устройства с ридером)
@@ -226,6 +227,20 @@ class Model_AccessCategory extends Model
             return false;
         }
     }
+	
+	/**
+		 * Получить все временные зоны
+		 */
+		public function getAllTimezones()
+		{
+			$sql = 'SELECT id_timezone, name, timestart, timeend, flag FROM timezone ORDER BY name';
+			
+			$query = DB::query(Database::SELECT, $sql)
+				->execute(Database::instance('fb'))
+				->as_array();
+			
+			return $this->convertToUtf8($query);
+		}
     
     /**
      * Генерация GUID

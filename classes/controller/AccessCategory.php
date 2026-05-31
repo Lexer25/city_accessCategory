@@ -22,7 +22,7 @@ class Controller_AccessCategory extends Controller_Template {
 		 */
 		public function action_edit()
 		{
-			//$this->template->full_width = true;
+			$this->template->full_width = true;
 			$id = $this->request->param('id');
 			
 			if ($id === NULL) {
@@ -43,6 +43,9 @@ class Controller_AccessCategory extends Controller_Template {
 			$assignedPoints = Model::factory('accessCategory')->getAssignedAccessPointsIds($id);
 			
 			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
+			
+			// Получаем все временные зоны для отображения
+			$timezonesData = Model::factory('accessCategory')->getAllTimezones();
 		
 			// Обработка POST запроса
 			if ($this->request->method() == HTTP_Request::POST) {
@@ -82,6 +85,7 @@ class Controller_AccessCategory extends Controller_Template {
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData, 
+					'timezonesData' => $timezonesData,
 					'errors' => $errors,
 					'post' => $post,
 				));
@@ -92,6 +96,7 @@ class Controller_AccessCategory extends Controller_Template {
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData,
+					'timezonesData' => $timezonesData,
 					'errors' => array(),
 					'post' => array(),
 				));

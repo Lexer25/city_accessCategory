@@ -80,9 +80,9 @@
                                     <thead>
                                         <tr class="active">
                                             <th width="5%" class="text-center">Выбор <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="10%">ID <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="65%"><?php echo __('Название точки прохода'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="20%">Timezone ID <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="8%">ID <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="40%"><?php echo __('Название точки прохода'); ?> <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="47%"><?php echo __('Временная зона'); ?> <span class="glyphicon glyphicon-sort"></span></th>
                                         </tr>
                                         <tr class="filter-row">
                                             <th class="text-center">
@@ -102,25 +102,25 @@
                                                 </div>
                                             </th>
                                             <th>
-                                                <input type="text" id="filterTimezone" class="form-control input-sm" placeholder="<?php echo __('Поиск по Timezone...'); ?>" style="width: 100%;">
+                                                <input type="text" id="filterTimezone" class="form-control input-sm" placeholder="<?php echo __('Поиск по временной зоне...'); ?>" style="width: 100%;">
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if(count($allPoints) > 0): ?>
                                             <?php foreach ($allPoints as $point): 
-                                                // Получаем id_timezone для этой точки (если есть связь)
-                                                $timezoneId = null;
-                                                foreach ($assignedPointsWithData as $assigned) {
-                                                    if (Arr::get($assigned, 'id_dev') == Arr::get($point, 'id_dev')) {
-                                                        $timezoneId = Arr::get($assigned, 'id_timezone');
+                                                // Получаем данные о timezone для этой точки
+                                                $timezoneData = null;
+                                                foreach ($timezonesData as $tz) {
+                                                    if (Arr::get($tz, 'id_timezone') == Arr::get($point, 'id_timezone')) {
+                                                        $timezoneData = $tz;
                                                         break;
                                                     }
                                                 }
                                             ?>
                                                 <tr data-id="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
                                                     data-name="<?php echo htmlspecialchars(Arr::get($point, 'name')); ?>"
-                                                    data-timezone="<?php echo htmlspecialchars($timezoneId); ?>">
+                                                    data-timezone-name="<?php echo htmlspecialchars(Arr::get($timezoneData, 'name')); ?>">
                                                     <td class="text-center">
                                                         <input type="checkbox" name="access_points[]" value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
                                                                class="point-checkbox"
@@ -129,10 +129,39 @@
                                                       <td><?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?></td>
                                                       <td><?php echo htmlspecialchars(Arr::get($point, 'name')); ?></td>
                                                       <td>
-                                                            <?php if($timezoneId !== null && $timezoneId !== ''): ?>
-                                                                <span class="label label-info"><?php echo htmlspecialchars($timezoneId); ?></span>
+                                                            <?php if($timezoneData): ?>
+                                                                <div class="timezone-info">
+                                                                    <strong><?php echo htmlspecialchars(Arr::get($timezoneData, 'name')); ?></strong>
+                                                                    <br>
+                                                                    <small class="text-muted">
+                                                                        <?php echo Arr::get($timezoneData, 'timestart'); ?> - <?php echo Arr::get($timezoneData, 'timeend'); ?>
+                                                                    </small>
+                                                                    <br>
+                                                                    <small>
+                                                                        <?php
+                                                                        $flag = intval(Arr::get($timezoneData, 'flag'));
+                                                                        $days = array();
+                                                                        if ($flag & 1) $days[] = 'Пн';
+                                                                        if ($flag & 2) $days[] = 'Вт';
+                                                                        if ($flag & 4) $days[] = 'Ср';
+                                                                        if ($flag & 8) $days[] = 'Чт';
+                                                                        if ($flag & 16) $days[] = 'Пт';
+                                                                        if ($flag & 32) $days[] = 'Сб';
+                                                                        if ($flag & 64) $days[] = 'Вс';
+                                                                        if ($flag & 128) $days[] = 'Праздники';
+                                                                        if ($flag & 256) $days[] = 'Ночная';
+                                                                        if ($flag & 512) $days[] = 'Круглосуточно';
+                                                                        
+                                                                        if (!empty($days)) {
+                                                                            echo '<span class="label label-info">' . implode('</span> <span class="label label-info">', $days) . '</span>';
+                                                                        } else {
+                                                                            echo '<span class="text-muted">Нет дней</span>';
+                                                                        }
+                                                                        ?>
+                                                                    </small>
+                                                                </div>
                                                             <?php else: ?>
-                                                                <span class="text-muted">—</span>
+                                                                <span class="text-muted"><?php echo __('Нет временной зоны'); ?></span>
                                                             <?php endif; ?>
                                                         </td>
                                                   </tr>
@@ -212,13 +241,13 @@
                 var $row = $(this);
                 var id = $row.attr("data-id").toLowerCase();
                 var name = $row.attr("data-name").toLowerCase();
-                var timezone = $row.attr("data-timezone") || "";
+                var timezoneName = $row.attr("data-timezone-name") || "";
                 
                 var showRow = true;
                 
                 if (idFilter && id.indexOf(idFilter) === -1) showRow = false;
                 if (nameFilter && name.indexOf(nameFilter) === -1) showRow = false;
-                if (timezoneFilter && timezone.indexOf(timezoneFilter) === -1) showRow = false;
+                if (timezoneFilter && timezoneName.indexOf(timezoneFilter) === -1) showRow = false;
                 
                 if (showRow) {
                     $row.show();
@@ -269,8 +298,8 @@
                     aVal = parseInt($(a).find("td:eq(" + index + ")").text()) || 0;
                     bVal = parseInt($(b).find("td:eq(" + index + ")").text()) || 0;
                 } else if (index === 3) {
-                    aVal = $(a).attr("data-timezone") || "";
-                    bVal = $(b).attr("data-timezone") || "";
+                    aVal = $(a).attr("data-timezone-name") || "";
+                    bVal = $(b).attr("data-timezone-name") || "";
                     if (currentOrder === 'asc') {
                         return aVal.localeCompare(bVal);
                     } else {
@@ -374,14 +403,12 @@
         var saveConfirmed = false;
         
         $("#editForm").on("submit", function(e) {
-            // Если уже подтверждено, отправляем форму
             if (saveConfirmed) {
                 return true;
             }
             
             e.preventDefault();
             
-            // Показываем alert с предупреждением
             alert("<?php echo __('Изменения набора точек прохода создаст очередь на запись/удаление идентификаторов в контроллеры.'); ?>");
             
             saveConfirmed = true;
@@ -394,7 +421,6 @@
             }
         };
         
-        // Обновляем состояние чекбокса "Выбрать все" при фильтрации
         $(document).on("change", ".point-checkbox", function() {
             updateSelectAllCheckbox();
         });
@@ -478,5 +504,15 @@
     
     #noFilterData td {
         padding: 30px;
+    }
+    
+    .timezone-info {
+        font-size: 12px;
+    }
+    
+    .timezone-info .label {
+        display: inline-block;
+        margin: 1px;
+        font-size: 10px;
     }
 </style>
