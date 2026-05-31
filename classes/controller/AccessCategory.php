@@ -44,6 +44,44 @@ class Controller_AccessCategory extends Controller_Template {
 			
 			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
 		
+		// Группируем timezone по id_dev
+			$groupedTimezones = array();
+			foreach ($assignedPointsWithData as $assigned) {
+				$devId = Arr::get($assigned, 'id_dev');
+				$tzId = Arr::get($assigned, 'id_timezone');
+				if (!empty($tzId)) {
+					if (!isset($groupedTimezones[$devId])) {
+						$groupedTimezones[$devId] = array();
+					}
+					if (!in_array($tzId, $groupedTimezones[$devId])) {
+						$groupedTimezones[$devId][] = $tzId;
+					}
+				}
+			}
+			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
+
+				// Получаем список временных зон
+				$timezones = Model::factory('accessCategory')->getTimezonesList();
+				$timezonesMap = array();
+				foreach ($timezones as $tz) {
+					$timezonesMap[Arr::get($tz, 'id_timezone')] = Arr::get($tz, 'name');
+				}
+
+				// Группируем timezone по id_dev
+				$groupedTimezones = array();
+				foreach ($assignedPointsWithData as $assigned) {
+					$devId = Arr::get($assigned, 'id_dev');
+					$tzId = Arr::get($assigned, 'id_timezone');
+					if (!empty($tzId)) {
+						if (!isset($groupedTimezones[$devId])) {
+							$groupedTimezones[$devId] = array();
+						}
+						if (!in_array($tzId, $groupedTimezones[$devId])) {
+							$groupedTimezones[$devId][] = $tzId;
+						}
+					}
+				}
+
 			// Обработка POST запроса
 			if ($this->request->method() == HTTP_Request::POST) {
 				$post = $this->request->post();
@@ -82,6 +120,8 @@ class Controller_AccessCategory extends Controller_Template {
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData, 
+					 'groupedTimezones' => $groupedTimezones,  // Добавьте эту строку
+					 'timezonesMap' => $timezonesMap,  // Добавьте эту строку
 					'errors' => $errors,
 					'post' => $post,
 				));
@@ -92,6 +132,8 @@ class Controller_AccessCategory extends Controller_Template {
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData,
+					 'groupedTimezones' => $groupedTimezones,  // Добавьте эту строку
+					 'timezonesMap' => $timezonesMap,  // Добавьте эту строку
 					'errors' => array(),
 					'post' => array(),
 				));

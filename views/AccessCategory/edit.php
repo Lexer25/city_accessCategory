@@ -64,6 +64,9 @@
                             <h4 class="panel-title">
                                 <?php echo __('Точки прохода'); ?>
                                 <div class="btn-group pull-right">
+                                    <button type="button" id="showSelectedFirst" class="btn btn-xs btn-info" style="margin-right: 5px;">
+                                        <span class="glyphicon glyphicon-arrow-up"></span> <?php echo __('Выбранные вверху'); ?>
+                                    </button>
                                     <button type="button" id="checkAll" class="btn btn-xs btn-default">
                                         <span class="glyphicon glyphicon-check"></span> <?php echo __('Выбрать все'); ?>
                                     </button>
@@ -79,10 +82,10 @@
                                 <table id="pointsTable" class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
                                     <thead>
                                         <tr class="active">
-                                            <th width="5%" class="text-center">Выбор <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="10%">ID <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="5%" class="text-center"><?php echo __('Выбор'); ?> <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="10%"><?php echo __('ID'); ?> <span class="glyphicon glyphicon-sort"></span></th>
                                             <th width="65%"><?php echo __('Название точки прохода'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="20%">Timezone ID <span class="glyphicon glyphicon-sort"></span></th>
+                                            <th width="20%"><?php echo __('Временная зона'); ?> <span class="glyphicon glyphicon-sort"></span></th>
                                         </tr>
                                         <tr class="filter-row">
                                             <th class="text-center">
@@ -102,40 +105,44 @@
                                                 </div>
                                             </th>
                                             <th>
-                                                <input type="text" id="filterTimezone" class="form-control input-sm" placeholder="<?php echo __('Поиск по Timezone...'); ?>" style="width: 100%;">
+                                                <input type="text" id="filterTimezone" class="form-control input-sm" placeholder="<?php echo __('Поиск по временной зоне...'); ?>" style="width: 100%;">
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <?php if(count($allPoints) > 0): ?>
                                             <?php foreach ($allPoints as $point): 
-                                                // Получаем id_timezone для этой точки (если есть связь)
-                                                $timezoneId = null;
-                                                foreach ($assignedPointsWithData as $assigned) {
-                                                    if (Arr::get($assigned, 'id_dev') == Arr::get($point, 'id_dev')) {
-                                                        $timezoneId = Arr::get($assigned, 'id_timezone');
-                                                        break;
-                                                    }
-                                                }
+                                                // Получаем все id_timezone для этой точки из предварительно сгруппированных данных
+                                                $timezoneIds = isset($groupedTimezones[Arr::get($point, 'id_dev')]) 
+                                                    ? $groupedTimezones[Arr::get($point, 'id_dev')] 
+                                                    : array();
+                                                $isChecked = in_array(Arr::get($point, 'id_dev'), $assignedPoints);
                                             ?>
                                                 <tr data-id="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
                                                     data-name="<?php echo htmlspecialchars(Arr::get($point, 'name')); ?>"
-                                                    data-timezone="<?php echo htmlspecialchars($timezoneId); ?>">
+                                                    data-timezone="<?php echo htmlspecialchars(implode(',', $timezoneIds)); ?>">
                                                     <td class="text-center">
                                                         <input type="checkbox" name="access_points[]" value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
                                                                class="point-checkbox"
-                                                               <?php echo in_array(Arr::get($point, 'id_dev'), $assignedPoints) ? 'checked' : ''; ?>>
-                                                      </td>
-                                                      <td><?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?></td>
-                                                      <td><?php echo htmlspecialchars(Arr::get($point, 'name')); ?></td>
-                                                      <td>
-                                                            <?php if($timezoneId !== null && $timezoneId !== ''): ?>
-                                                                <span class="label label-info"><?php echo htmlspecialchars($timezoneId); ?></span>
-                                                            <?php else: ?>
-                                                                <span class="text-muted">—</span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                  </tr>
+                                                               <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                    </td>
+                                                    <td><?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?></td>
+                                                    <td><?php echo htmlspecialchars(Arr::get($point, 'name')); ?></td>
+                                                    <td>
+                                                        <?php if(!empty($timezoneIds)): ?>
+                                                            <?php foreach ($timezoneIds as $tzId): ?>
+                                                                <?php 
+                                                                $tzName = isset($timezonesMap[$tzId]) ? $timezonesMap[$tzId] : $tzId;
+                                                                ?>
+                                                                <span class="label label-info" style="margin-right: 3px; display: inline-block; margin-bottom: 2px;" title="ID: <?php echo htmlspecialchars($tzId); ?>">
+                                                                    <?php echo htmlspecialchars($tzName); ?>
+                                                                </span>
+                                                            <?php endforeach; ?>
+                                                        <?php else: ?>
+                                                            <span class="text-muted">—</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr id="noDataRow">
@@ -192,6 +199,27 @@
             }
         }
         
+        // Функция для сортировки строк по состоянию чекбокса (выбранные вверху)
+        function sortByCheckbox() {
+            var $tbody = $("#pointsTable tbody");
+            var rows = $tbody.children("tr").get();
+            
+            rows.sort(function(a, b) {
+                var aChecked = $(a).find("input.point-checkbox").prop("checked");
+                var bChecked = $(b).find("input.point-checkbox").prop("checked");
+                
+                // Выбранные (true) идут первыми
+                if (aChecked === bChecked) return 0;
+                if (aChecked && !bChecked) return -1;
+                if (!aChecked && bChecked) return 1;
+                return 0;
+            });
+            
+            $.each(rows, function(i, row) {
+                $tbody.append(row);
+            });
+        }
+        
         // Подсчет выбранных при загрузке
         updateSelectedCount();
         
@@ -243,7 +271,7 @@
             // Показываем сообщение, если ничего не найдено
             if (visibleCount === 0 && total > 0) {
                 if ($("#noFilterData").length === 0) {
-                    $("#pointsTable tbody").append('<tr id="noFilterData"><td colspan="4" class="text-center text-muted"><span class="glyphicon glyphicon-search"></span> <?php echo __('Ничего не найдено'); ?></td></tr>');
+                    $("#pointsTable tbody").append('<tr id="noFilterData"><td colspan="4" class="text-center text-muted"><span class="glyphicon glyphicon-search"></span> <?php echo __('Ничего не найдено'); ?></td></td>');
                 }
             } else {
                 $("#noFilterData").remove();
@@ -334,6 +362,11 @@
             updateSelectAllCheckbox();
         });
         
+        // Кнопка "Выбранные вверху"
+        $("#showSelectedFirst").on("click", function() {
+            sortByCheckbox();
+        });
+        
         // Чекбокс "Выбрать все на странице"
         $("#selectAllCheckbox").on("change", function() {
             var isChecked = $(this).prop("checked");
@@ -355,14 +388,6 @@
             function() { $(this).addClass("info"); },
             function() { $(this).removeClass("info"); }
         );
-        
-        // Клик по строке таблицы для выбора чекбокса
-        $("#pointsTable tbody tr").on("click", function(e) {
-            if ($(e.target).is("input")) return;
-            var $checkbox = $(this).find("input.point-checkbox");
-            $checkbox.prop("checked", !$checkbox.prop("checked"));
-            $checkbox.trigger("change");
-        });
         
         // Предупреждение при уходе со страницы без сохранения
         var formChanged = false;

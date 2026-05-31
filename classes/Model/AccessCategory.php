@@ -3,6 +3,39 @@
 class Model_AccessCategory extends Model
 {
     
+	/**
+	 * Получить список всех временных зон
+	 */
+	public function getTimezonesList()
+	{
+		$sql = 'SELECT id_timezone, name FROM timezone ORDER BY name';
+		
+		$query = DB::query(Database::SELECT, $sql)
+			->execute(Database::instance('fb'))
+			->as_array();
+		
+		return $this->convertToUtf8($query);
+	}
+
+	/**
+	 * Получить название временной зоны по ID
+	 */
+	public function getTimezoneNameById($id)
+	{
+		$sql = 'SELECT name FROM timezone WHERE id_timezone = ' . intval($id);
+		
+		$query = DB::query(Database::SELECT, $sql)
+			->execute(Database::instance('fb'))
+			->as_array();
+		
+		if (count($query) > 0) {
+			$result = $this->convertToUtf8($query);
+			return $result[0]['NAME'];
+		}
+		
+		return null;
+	}
+	
     /**
      * Преобразование ключей массива из верхнего регистра в нижний
      * и конвертация кодировки из Windows-1251 в UTF-8
