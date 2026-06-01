@@ -261,4 +261,65 @@ class Controller_AccessCategory extends Controller_Template {
         
         $this->template->content = $content;
     }
+	
+	/**
+ * Редактирование временных зон для точки прохода
+ */
+public function action_editTimezones()
+{
+    $categoryId = (int)$this->request->param('id');
+    $deviceId = (int)$this->request->param('device_id');
+    
+    if (!$categoryId || !$deviceId) {
+        $this->redirect('accessCategory');
+    }
+    
+    // Получаем данные категории
+    $category = Model::factory('accessCategory')->getAccessCategoryById($categoryId);
+    if (empty($category)) {
+        $this->redirect('accessCategory');
+    }
+    
+    // Получаем данные точки прохода
+    $device = Model::factory('accessCategory')->getAccessPointById($deviceId);
+    if (empty($device)) {
+        $this->redirect('accessCategory/edit/' . $categoryId);
+    }
+    
+    // Получаем все временные зоны
+    $allTimezones = Model::factory('accessCategory')->getTimezonesList();
+    
+    // Получаем текущие временные зоны для этой точки
+    $selectedTimezones = Model::factory('accessCategory')->getDeviceTimezones($categoryId, $deviceId);
+    
+    // Обработка POST запроса
+    if ($this->request->method() == HTTP_Request::POST) {
+        $post = $this->request->post();
+        $selectedTimezonesPost = Arr::get($post, 'timezones', array());
+        
+        // Сохраняем временные зоны
+        $result = Model::factory('accessCategory')->saveDeviceTimezones($categoryId, $deviceId, $selectedTimezonesPost);
+        
+        if ($result) {
+            Session::instance()->set('message', __('Временные зоны успешно сохранены'));
+            Session::instance()->set('message_type', 'success');
+        } else {
+            Session::instance()->set('message', __('Ошибка при сохранении временных зон'));
+            Session::instance()->set('message_type', 'danger');
+        }
+        
+        $this->redirect('accessCategory/edit/' . $categoryId);
+    }
+    
+    $content = View::factory('accessCategory/editTimezones', array(
+        'category' => $category,
+        'device' => $device,
+        'allTimezones' => $allTimezones,
+        'selectedTimezones' => $selectedTimezones,
+        'categoryId' => $categoryId,
+        'deviceId' => $deviceId,
+    ));
+    
+    $this->template->content = $content;
+}
 }

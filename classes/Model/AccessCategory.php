@@ -273,4 +273,94 @@ class Model_AccessCategory extends Model
             mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
         );
     }
+	
+	/**
+ * Получить данные точки прохода по ID
+ */
+public function getAccessPointById($deviceId)
+{
+    $sql = 'SELECT d.id_dev, d.name 
+            FROM device d 
+            WHERE d.id_dev = ' . intval($deviceId);
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance('fb'))
+        ->as_array();
+    
+    if (count($query) > 0) {
+        $result = $this->convertToUtf8($query);
+        return $result[0];
+    }
+    
+    return null;
+}
+
+/**
+ * Получить временные зоны для конкретной точки прохода в категории
+ */
+public function getDeviceTimezones($categoryId, $deviceId)
+{
+    $sql = "SELECT id_timezone FROM access 
+            WHERE id_accessname = " . intval($categoryId) . " 
+            AND id_dev = " . intval($deviceId) . "
+            AND id_timezone IS NOT NULL";
+    
+    $query = DB::query(Database::SELECT, $sql)
+        ->execute(Database::instance('fb'))
+        ->as_array();
+    
+    $timezones = array();
+    foreach ($query as $row) {
+        $timezones[] = (int)$row['ID_TIMEZONE'];
+    }
+    
+    return $timezones;
+}
+
+/**
+ * Сохранить временные зоны для точки прохода в категории
+ */
+public function saveDeviceTimezones($categoryId, $deviceId, $timezones)
+{
+    try {
+        $db = Database::instance('fb');
+        
+        // Удаляем существующие связи для этой точки
+        DB::query(Database::DELETE, "DELETE FROM access 
+            WHERE id_accessname = " . intval($categoryId) . " 
+            AND id_dev = " . intval($deviceId))
+            ->execute($db);
+        
+        // Добавляем новые связи
+        if (!empty($timezones)) {
+            foreach ($timezones as $timezoneId) {
+                if (empty($timezoneId)) continue;
+                
+                $newId = DB::query(Database::SELECT, "SELECT COALESCE(MAX(id_access), 0) + 1 as new_id FROM access")
+                    ->execute($db)
+                    ->get('new_id', 1);
+                
+                $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
+                        VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
+                
+                DB::query(Database::INSERT, $sql)->execute($db);
+            }
+        } else {
+            // Если временных зон нет, создаем запись с NULL временной зоной
+            $newId = DB::query(Database::SELECT, "SELECT COALESCE(MAX(id_access), 0) + 1 as new_id FROM access")
+                ->execute($db)
+                ->get('new_id', 1);
+            
+            $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
+                    VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
+            
+            DB::query(Database::INSERT, $sql)->execute($db);
+        }
+        
+        return true;
+    } catch (Exception $e) {
+        Kohana::$log->add(Log::ERROR, 'Error saving device timezones: ' . $e->getMessage());
+        return false;
+    }
+}
 }
