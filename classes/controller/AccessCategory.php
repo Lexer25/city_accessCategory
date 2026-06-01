@@ -88,7 +88,10 @@ class Controller_AccessCategory extends Controller_Template {
 				
 				$name = Arr::get($post, 'name');
 				$guid = Arr::get($post, 'guid');
-				$selectedPoints = Arr::get($post, 'access_points', array());
+				
+				$selectedPointsStr = Arr::get($post, 'access_points', '');
+				$selectedPoints = !empty($selectedPointsStr) ? explode(',', $selectedPointsStr) : array();
+
 				
 				// Валидация
 				$errors = array();

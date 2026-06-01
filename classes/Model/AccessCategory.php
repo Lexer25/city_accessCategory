@@ -218,8 +218,8 @@ class Model_AccessCategory extends Model
         $nameForDb = addslashes($nameForDb);
         $guid = addslashes($guid);
         
-        $sql = "INSERT INTO accessname (id_accessname, name, guid, time_stamp) 
-                VALUES ((SELECT COALESCE(MAX(id_accessname), 0) + 1 FROM accessname), '{$nameForDb}', '{$guid}', CURRENT_TIMESTAMP)";
+        $sql = "INSERT INTO accessname (name) 
+                VALUES ('{$nameForDb}')";
         
         try {
             $result = DB::query(Database::INSERT, $sql)

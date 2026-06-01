@@ -51,7 +51,7 @@
                         </div>
                         <div class="panel-body">
                             <div class="form-group">
-                                <label><?php echo __('Выбрано точек прохода'); ?>:</label>
+                                <label><?php echo __('Точек прохода в категории'); ?>:</label>
                                 <h3><span id="selectedCount" class="label label-primary">0</span></h3>
                             </div>
                         </div>
@@ -59,72 +59,91 @@
                 </div>
                 
                 <div class="col-md-8">
+                    <!-- Блок для добавления новых точек -->
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h4 class="panel-title">
-                                <?php echo __('Точки прохода'); ?>
+                                <?php echo __('Добавить точки прохода'); ?>
+                            </h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <select id="availablePointsSelect" class="form-control" multiple size="10" style="height: 200px;">
+                                        <?php 
+                                        // Получаем ID точек, уже входящих в категорию
+                                        $assignedIds = array();
+                                        foreach ($assignedPointsWithData as $assigned) {
+                                            $assignedIds[] = Arr::get($assigned, 'id_dev');
+                                        }
+                                        
+                                        // Показываем только точки, не входящие в категорию
+                                        foreach ($allPoints as $point): 
+                                            if (!in_array(Arr::get($point, 'id_dev'), $assignedIds)):
+                                        ?>
+                                            <option value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>">
+                                                [<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>] <?php echo htmlspecialchars(Arr::get($point, 'name')); ?>
+                                            </option>
+                                        <?php 
+                                            endif;
+                                        endforeach; 
+                                        ?>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <button type="button" id="addSelectedPoints" class="btn btn-success btn-block" style="margin-top: 60px;">
+                                        <span class="glyphicon glyphicon-arrow-right"></span> <?php echo __('Добавить выбранные'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 10px;">
+                                <div class="col-md-12">
+                                    <small class="text-muted">
+                                        <?php echo __('Выберите точки прохода (Ctrl+Click для множественного выбора)'); ?>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Блок с уже добавленными точками -->
+                    <div class="panel panel-default" style="margin-top: 15px;">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <?php echo __('Точки прохода в категории'); ?>
                                 <div class="btn-group pull-right">
-                                    <button type="button" id="showSelectedFirst" class="btn btn-xs btn-info" style="margin-right: 5px;">
-                                        <span class="glyphicon glyphicon-arrow-up"></span> <?php echo __('Выбранные вверху'); ?>
-                                    </button>
-                                    <button type="button" id="checkAll" class="btn btn-xs btn-default">
-                                        <span class="glyphicon glyphicon-check"></span> <?php echo __('Выбрать все'); ?>
-                                    </button>
-                                    <button type="button" id="uncheckAll" class="btn btn-xs btn-default">
-                                        <span class="glyphicon glyphicon-unchecked"></span> <?php echo __('Снять все'); ?>
+                                    <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger">
+                                        <span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
                                     </button>
                                 </div>
                             </h4>
                         </div>
                         <div class="panel-body" style="padding: 0;">
-                            <!-- Таблица точек прохода с фильтрацией в шапке -->
                             <div class="table-responsive">
-                                <table id="pointsTable" class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
+                                <table class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
                                     <thead>
                                         <tr class="active">
-                                            <th width="5%" class="text-center"><?php echo __('Выбор'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="10%"><?php echo __('ID'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="65%"><?php echo __('Название точки прохода'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                            <th width="20%"><?php echo __('Временная зона'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                                        </tr>
-                                        <tr class="filter-row">
-                                            <th class="text-center">
-                                                <input type="checkbox" id="selectAllCheckbox" title="<?php echo __('Выбрать все на странице'); ?>" style="margin: 0;">
-                                            </th>
-                                            <th>
-                                                <input type="text" id="filterId" class="form-control input-sm" placeholder="<?php echo __('Поиск по ID...'); ?>" style="width: 100%;">
-                                            </th>
-                                            <th>
-                                                <div class="input-group input-group-sm">
-                                                    <input type="text" id="filterName" class="form-control" placeholder="<?php echo __('Поиск по названию...'); ?>">
-                                                    <span class="input-group-btn">
-                                                        <button type="button" id="clearSearch" class="btn btn-default" title="<?php echo __('Очистить поиск'); ?>">
-                                                            <span class="glyphicon glyphicon-remove"></span>
-                                                        </button>
-                                                    </span>
-                                                </div>
-                                            </th>
-                                            <th>
-                                                <input type="text" id="filterTimezone" class="form-control input-sm" placeholder="<?php echo __('Поиск по временной зоне...'); ?>" style="width: 100%;">
-                                            </th>
+                                            <th width="5%"><input type="checkbox" id="selectAllAssigned"></th>
+                                            <th width="10%"><?php echo __('ID'); ?></th>
+                                            <th width="65%"><?php echo __('Название точки прохода'); ?></th>
+                                            <th width="20%"><?php echo __('Временная зона'); ?></th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <?php if(count($allPoints) > 0): ?>
-                                            <?php foreach ($allPoints as $point): 
-                                                // Получаем все id_timezone для этой точки из предварительно сгруппированных данных
+                                    <tbody id="assignedPointsBody">
+                                        <?php if(count($assignedPointsWithData) > 0): ?>
+                                            <?php foreach ($assignedPointsWithData as $point): 
                                                 $timezoneIds = isset($groupedTimezones[Arr::get($point, 'id_dev')]) 
                                                     ? $groupedTimezones[Arr::get($point, 'id_dev')] 
                                                     : array();
-                                                $isChecked = in_array(Arr::get($point, 'id_dev'), $assignedPoints);
+                                                $tzId = Arr::get($point, 'id_timezone');
+                                                if (!empty($tzId) && !in_array($tzId, $timezoneIds)) {
+                                                    $timezoneIds[] = $tzId;
+                                                }
+                                                $timezoneIds = array_unique($timezoneIds);
                                             ?>
-                                                <tr data-id="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
-                                                    data-name="<?php echo htmlspecialchars(Arr::get($point, 'name')); ?>"
-                                                    data-timezone="<?php echo htmlspecialchars(implode(',', $timezoneIds)); ?>">
+                                                <tr data-id="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>">
                                                     <td class="text-center">
-                                                        <input type="checkbox" name="access_points[]" value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>"
-                                                               class="point-checkbox"
-                                                               <?php echo $isChecked ? 'checked' : ''; ?>>
+                                                        <input type="checkbox" class="assigned-checkbox" value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>">
                                                     </td>
                                                     <td><?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?></td>
                                                     <td><?php echo htmlspecialchars(Arr::get($point, 'name')); ?></td>
@@ -134,7 +153,7 @@
                                                                 <?php 
                                                                 $tzName = isset($timezonesMap[$tzId]) ? $timezonesMap[$tzId] : $tzId;
                                                                 ?>
-                                                                <span class="label label-info" style="margin-right: 3px; display: inline-block; margin-bottom: 2px;" title="ID: <?php echo htmlspecialchars($tzId); ?>">
+                                                                <span class="label label-info" style="margin-right: 3px; display: inline-block; margin-bottom: 2px;">
                                                                     <?php echo htmlspecialchars($tzName); ?>
                                                                 </span>
                                                             <?php endforeach; ?>
@@ -145,32 +164,22 @@
                                                 </tr>
                                             <?php endforeach; ?>
                                         <?php else: ?>
-                                            <tr id="noDataRow">
+                                            <tr id="noAssignedDataRow">
                                                 <td colspan="4" class="text-center text-muted">
-                                                    <?php echo __('Нет доступных точек прохода'); ?>
+                                                    <?php echo __('Нет точек прохода в этой категории'); ?>
                                                 </td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
-                                    <tfoot>
-                                        <tr class="active">
-                                            <td colspan="4">
-                                                <small class="text-muted">
-                                                    <span class="glyphicon glyphicon-stats"></span> 
-                                                    <?php echo __('Всего точек'); ?>: <span id="totalPoints"><?php echo count($allPoints); ?></span>
-                                                    <span id="filterInfo" style="display: none;">
-                                                        , <?php echo __('Показано'); ?>: <span id="filteredCount">0</span>
-                                                    </span>
-                                                </small>
-                                            </td>
-                                        </tr>
-                                    </tfoot>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- Скрытые поля для отправки выбранных точек -->
+            <input type="hidden" name="access_points" id="accessPointsInput" value="">
             
             <div class="form-group" style="margin-top: 15px;">
                 <button type="submit" id="saveButton" class="btn btn-primary">
@@ -187,207 +196,143 @@
 
 <script type="text/javascript">
     $(document).ready(function() {
-        // Инициализация счетчика выбранных элементов
+        // Массив для хранения ID выбранных точек
+        var selectedPoints = [];
+        
+        // Инициализация массива существующими точками
+        <?php foreach ($assignedPointsWithData as $point): ?>
+            selectedPoints.push(<?php echo json_encode(Arr::get($point, 'id_dev')); ?>);
+        <?php endforeach; ?>
+        
+        // Функция обновления счетчика
         function updateSelectedCount() {
-            var count = $("input.point-checkbox:checked").length;
-            $("#selectedCount").text(count);
-            $("#selectedCount").removeClass("label-primary label-success label-warning");
-            if (count > 0) {
-                $("#selectedCount").addClass("label-success");
-            } else {
-                $("#selectedCount").addClass("label-primary");
-            }
+            $("#selectedCount").text(selectedPoints.length);
         }
         
-        // Функция для сортировки строк по состоянию чекбокса (выбранные вверху)
-        function sortByCheckbox() {
-            var $tbody = $("#pointsTable tbody");
-            var rows = $tbody.children("tr").get();
-            
-            rows.sort(function(a, b) {
-                var aChecked = $(a).find("input.point-checkbox").prop("checked");
-                var bChecked = $(b).find("input.point-checkbox").prop("checked");
-                
-                // Выбранные (true) идут первыми
-                if (aChecked === bChecked) return 0;
-                if (aChecked && !bChecked) return -1;
-                if (!aChecked && bChecked) return 1;
-                return 0;
-            });
-            
-            $.each(rows, function(i, row) {
-                $tbody.append(row);
-            });
+        // Функция обновления скрытого поля
+        function updateHiddenField() {
+            $("#accessPointsInput").val(selectedPoints.join(','));
         }
         
-        // Подсчет выбранных при загрузке
-        updateSelectedCount();
-        
-        // Отслеживание изменений чекбоксов
-        $("input.point-checkbox").on("change", function() {
-            updateSelectedCount();
-            updateSelectAllCheckbox();
-        });
-        
-        // Функция фильтрации таблицы
-        function filterTable() {
-            var idFilter = $("#filterId").val().toLowerCase().trim();
-            var nameFilter = $("#filterName").val().toLowerCase().trim();
-            var timezoneFilter = $("#filterTimezone").val().toLowerCase().trim();
-            var visibleCount = 0;
+        // Функция обновления таблицы с добавленными точками
+        function updateAssignedTable() {
+            var $tbody = $("#assignedPointsBody");
+            $tbody.empty();
             
-            $("#pointsTable tbody tr").each(function() {
-                var $row = $(this);
-                var id = $row.attr("data-id").toLowerCase();
-                var name = $row.attr("data-name").toLowerCase();
-                var timezone = $row.attr("data-timezone") || "";
-                
-                var showRow = true;
-                
-                if (idFilter && id.indexOf(idFilter) === -1) showRow = false;
-                if (nameFilter && name.indexOf(nameFilter) === -1) showRow = false;
-                if (timezoneFilter && timezone.indexOf(timezoneFilter) === -1) showRow = false;
-                
-                if (showRow) {
-                    $row.show();
-                    visibleCount++;
-                } else {
-                    $row.hide();
-                }
-            });
-            
-            // Обновление информации о фильтрации
-            var total = $("#pointsTable tbody tr").length;
-            if (idFilter || nameFilter || timezoneFilter) {
-                $("#filterInfo").show();
-                $("#filteredCount").text(visibleCount);
-            } else {
-                $("#filterInfo").hide();
+            if (selectedPoints.length === 0) {
+                $tbody.append('<tr id="noAssignedDataRow"><td colspan="4" class="text-center text-muted"><?php echo __('Нет точек прохода в этой категории'); ?></td></tr>');
+                updateSelectedCount();
+                return;
             }
             
-            // Обновляем состояние чекбокса "Выбрать все на странице"
-            updateSelectAllCheckbox();
+            // Получаем данные о точках из существующего массива allPoints
+            var pointsData = {};
+            <?php foreach ($allPoints as $point): ?>
+                pointsData[<?php echo json_encode(Arr::get($point, 'id_dev')); ?>] = {
+                    id: <?php echo json_encode(Arr::get($point, 'id_dev')); ?>,
+                    name: <?php echo json_encode(htmlspecialchars(Arr::get($point, 'name'))); ?>
+                };
+            <?php endforeach; ?>
             
-            // Показываем сообщение, если ничего не найдено
-            if (visibleCount === 0 && total > 0) {
-                if ($("#noFilterData").length === 0) {
-                    $("#pointsTable tbody").append('<tr id="noFilterData"><td colspan="4" class="text-center text-muted"><span class="glyphicon glyphicon-search"></span> <?php echo __('Ничего не найдено'); ?></td></td>');
+            // Добавляем точки из selectedPoints
+            for (var i = 0; i < selectedPoints.length; i++) {
+                var pointId = selectedPoints[i];
+                var point = pointsData[pointId];
+                if (point) {
+                    var $row = $('<tr>');
+                    $row.attr('data-id', point.id);
+                    $row.html('<td class="text-center"><input type="checkbox" class="assigned-checkbox" value="' + point.id + '"></td>' +
+                              '<td>' + point.id + '</td>' +
+                              '<td>' + point.name + '</td>' +
+                              '<td><span class="text-muted">—</span></td>');
+                    $tbody.append($row);
                 }
-            } else {
-                $("#noFilterData").remove();
             }
+            
+            updateSelectedCount();
         }
         
-        // Сортировка таблицы
-        var sortOrder = {};
-        $("#pointsTable thead tr:first th").on("click", function() {
-            var index = $(this).index();
-            var $table = $("#pointsTable");
-            var rows = $table.find("tbody tr:visible").get();
-            var currentOrder = sortOrder[index] || 'asc';
+        // Функция обновления списка доступных точек
+        function updateAvailablePoints() {
+            var $select = $("#availablePointsSelect");
+            $select.empty();
             
-            rows.sort(function(a, b) {
-                var aVal, bVal;
-                
-                if (index === 0) {
-                    // Сортировка по чекбоксам
-                    aVal = $(a).find("input.point-checkbox").prop("checked") ? 1 : 0;
-                    bVal = $(b).find("input.point-checkbox").prop("checked") ? 1 : 0;
-                } else if (index === 1) {
-                    aVal = parseInt($(a).find("td:eq(" + index + ")").text()) || 0;
-                    bVal = parseInt($(b).find("td:eq(" + index + ")").text()) || 0;
-                } else if (index === 3) {
-                    aVal = $(a).attr("data-timezone") || "";
-                    bVal = $(b).attr("data-timezone") || "";
-                    if (currentOrder === 'asc') {
-                        return aVal.localeCompare(bVal);
-                    } else {
-                        return bVal.localeCompare(aVal);
-                    }
-                } else {
-                    aVal = $(a).find("td:eq(" + index + ")").text().toLowerCase();
-                    bVal = $(b).find("td:eq(" + index + ")").text().toLowerCase();
+            <?php foreach ($allPoints as $point): ?>
+                var pointId = <?php echo json_encode(Arr::get($point, 'id_dev')); ?>;
+                if (selectedPoints.indexOf(pointId) === -1) {
+                    $select.append('<option value="' + pointId + '">[' + <?php echo json_encode(Arr::get($point, 'id_dev')); ?> + '] ' + <?php echo json_encode(htmlspecialchars(Arr::get($point, 'name'))); ?> + '</option>');
                 }
-                
-                if (currentOrder === 'asc') {
-                    if (aVal < bVal) return -1;
-                    if (aVal > bVal) return 1;
-                    return 0;
-                } else {
-                    if (aVal > bVal) return -1;
-                    if (aVal < bVal) return 1;
-                    return 0;
+            <?php endforeach; ?>
+        }
+        
+        // Добавление выбранных точек
+        $("#addSelectedPoints").on("click", function() {
+            var selectedOptions = $("#availablePointsSelect option:selected");
+            var added = false;
+            
+            selectedOptions.each(function() {
+                var pointId = $(this).val();
+                if (selectedPoints.indexOf(pointId) === -1) {
+                    selectedPoints.push(pointId);
+                    added = true;
                 }
             });
             
-            sortOrder[index] = currentOrder === 'asc' ? 'desc' : 'asc';
+            if (added) {
+                updateAssignedTable();
+                updateAvailablePoints();
+                updateHiddenField();
+            } else {
+                alert("<?php echo __('Не выбраны точки для добавления'); ?>");
+            }
+        });
+        
+        // Удаление выбранных точек
+        $("#removeSelectedPoints").on("click", function() {
+            var checkedBoxes = $(".assigned-checkbox:checked");
+            var removed = false;
             
-            $.each(rows, function(i, row) {
-                $table.children("tbody").append(row);
+            checkedBoxes.each(function() {
+                var pointId = $(this).val();
+                var index = selectedPoints.indexOf(pointId);
+                if (index !== -1) {
+                    selectedPoints.splice(index, 1);
+                    removed = true;
+                }
             });
             
-            // Визуальная индикация сортировки
-            $("#pointsTable thead tr:first th").removeClass("active");
-            $(this).addClass("active");
+            if (removed) {
+                updateAssignedTable();
+                updateAvailablePoints();
+                updateHiddenField();
+            } else {
+                alert("<?php echo __('Не выбраны точки для удаления'); ?>");
+            }
         });
         
-        // Фильтрация с задержкой
-        var debounceTimer;
-        function debounceFilter() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(filterTable, 300);
-        }
-        
-        // Назначаем обработчики для полей фильтрации
-        $("#filterId, #filterName, #filterTimezone").on("keyup", debounceFilter);
-        $("#filterId, #filterName, #filterTimezone").on("change", filterTable);
-        
-        // Очистка поиска
-        $("#clearSearch").on("click", function() {
-            $("#filterName").val("");
-            filterTable();
-        });
-        
-        // Выбрать все видимые чекбоксы
-        $("#checkAll").on("click", function() {
-            $("#pointsTable tbody tr:visible .point-checkbox").prop("checked", true);
-            updateSelectedCount();
-            updateSelectAllCheckbox();
-        });
-        
-        // Снять все видимые чекбоксы
-        $("#uncheckAll").on("click", function() {
-            $("#pointsTable tbody tr:visible .point-checkbox").prop("checked", false);
-            updateSelectedCount();
-            updateSelectAllCheckbox();
-        });
-        
-        // Кнопка "Выбранные вверху"
-        $("#showSelectedFirst").on("click", function() {
-            sortByCheckbox();
-        });
-        
-        // Чекбокс "Выбрать все на странице"
-        $("#selectAllCheckbox").on("change", function() {
+        // Выбрать все чекбоксы в таблице добавленных точек
+        $("#selectAllAssigned").on("change", function() {
             var isChecked = $(this).prop("checked");
-            $("#pointsTable tbody tr:visible .point-checkbox").prop("checked", isChecked);
-            updateSelectedCount();
+            $(".assigned-checkbox").prop("checked", isChecked);
         });
         
-        // Обновление состояния чекбокса "Выбрать все на странице"
-        function updateSelectAllCheckbox() {
-            var visibleCheckboxes = $("#pointsTable tbody tr:visible .point-checkbox");
-            var checkedVisible = visibleCheckboxes.filter(":checked").length;
-            var allChecked = visibleCheckboxes.length === checkedVisible && visibleCheckboxes.length > 0;
-            
-            $("#selectAllCheckbox").prop("checked", allChecked);
-        }
+        // Обновление состояния чекбокса "Выбрать все"
+        $(document).on("change", ".assigned-checkbox", function() {
+            var total = $(".assigned-checkbox").length;
+            var checked = $(".assigned-checkbox:checked").length;
+            $("#selectAllAssigned").prop("checked", total === checked && total > 0);
+        });
         
         // Подсветка строки при наведении
-        $("#pointsTable tbody tr").hover(
-            function() { $(this).addClass("info"); },
-            function() { $(this).removeClass("info"); }
-        );
+        $(document).on("mouseenter", "#assignedPointsBody tr", function() {
+            $(this).addClass("info");
+        }).on("mouseleave", "#assignedPointsBody tr", function() {
+            $(this).removeClass("info");
+        });
+        
+        // Инициализация
+        updateSelectedCount();
+        updateHiddenField();
         
         // Предупреждение при уходе со страницы без сохранения
         var formChanged = false;
@@ -395,18 +340,26 @@
             formChanged = true;
         });
         
-        // Перехват отправки формы - показываем alert
+        $("#addSelectedPoints, #removeSelectedPoints").on("click", function() {
+            formChanged = true;
+        });
+        
+        // Перехват отправки формы
         var saveConfirmed = false;
         
         $("#editForm").on("submit", function(e) {
-            // Если уже подтверждено, отправляем форму
             if (saveConfirmed) {
                 return true;
             }
             
             e.preventDefault();
             
-            // Показываем alert с предупреждением
+            if (selectedPoints.length === 0) {
+                if (!confirm("<?php echo __('В категории не будет ни одной точки прохода. Продолжить?'); ?>")) {
+                    return false;
+                }
+            }
+            
             alert("<?php echo __('Изменения набора точек прохода создаст очередь на запись/удаление идентификаторов в контроллеры.'); ?>");
             
             saveConfirmed = true;
@@ -418,90 +371,32 @@
                 return '<?php echo __('Вы не сохранили изменения! Вы уверены, что хотите покинуть страницу?'); ?>';
             }
         };
-        
-        // Обновляем состояние чекбокса "Выбрать все" при фильтрации
-        $(document).on("change", ".point-checkbox", function() {
-            updateSelectAllCheckbox();
-        });
     });
 </script>
 
 <style>
-    #pointsTable {
-        margin-bottom: 0;
+    #availablePointsSelect {
+        font-size: 12px;
     }
     
-    #pointsTable th {
-        cursor: pointer;
-        user-select: none;
-        background-color: #f5f5f5;
-        vertical-align: middle;
-    }
-    
-    #pointsTable th:hover {
-        background-color: #e8e8e8;
-    }
-    
-    #pointsTable th.active {
-        background-color: #d9edf7;
-    }
-    
-    #pointsTable th .glyphicon-sort {
-        opacity: 0.3;
-        margin-left: 5px;
-    }
-    
-    #pointsTable th:hover .glyphicon-sort {
-        opacity: 0.7;
-    }
-    
-    .filter-row th {
-        background-color: #fafafa !important;
-        cursor: default !important;
-        padding: 8px;
-    }
-    
-    .filter-row th:hover {
-        background-color: #fafafa !important;
-    }
-    
-    .filter-row input {
-        width: 100%;
-    }
-    
-    #pointsTable tbody tr {
-        transition: background-color 0.2s ease;
+    #assignedPointsBody tr {
         cursor: pointer;
     }
     
-    #pointsTable tbody tr.info {
-        background-color: #d9edf7;
-    }
-    
-    #pointsTable tbody tr:hover {
+    #assignedPointsBody tr:hover {
         background-color: #f5f5f5;
     }
     
-    #selectAllCheckbox {
-        cursor: pointer;
-        margin: 0;
+    #assignedPointsBody tr.info {
+        background-color: #d9edf7;
     }
     
-    .point-checkbox {
+    .assigned-checkbox {
         cursor: pointer;
     }
     
     #selectedCount {
         font-size: 24px;
         padding: 5px 15px;
-    }
-    
-    tfoot td {
-        background-color: #f9f9f9;
-        padding: 8px;
-    }
-    
-    #noFilterData td {
-        padding: 30px;
     }
 </style>
