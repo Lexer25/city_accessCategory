@@ -165,9 +165,15 @@ class Model_AccessCategory extends Model
             // Добавляем выбранные точки
             if (!empty($selectedPoints)) {
                 foreach ($selectedPoints as $id_dev) {
+					
+					$newId = DB::query(Database::SELECT, 'SELECT GEN_ID(GEN_ACCESS_ID, 1) as gen FROM RDB$DATABASE')
+                    ->execute($db)
+                    ->get('GEN');
+					
+					
                     $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
-                            VALUES ((SELECT COALESCE(MAX(id_access), 0) + 1 FROM access), 1, " . intval($id_accessname) . ", " . intval($id_dev) . ", NULL)";
-                    
+                            VALUES (" . intval($newId) . ",1, " . intval($id_accessname) . ", " . intval($id_dev) . ", NULL)";
+        Kohana::$log->add(Log::DEBUG, 'sql ' . $sql);            
                     DB::query(Database::INSERT, $sql)
                         ->execute(Database::instance('fb'));
                 }
@@ -379,13 +385,13 @@ public function addAccessPoints($categoryId, $points)
                 ->get('cnt', 0);
             
             if ($exists == 0) {
-                $newId = DB::query(Database::SELECT, "SELECT GEN_ID(GEN_ACCESS_ID, 1) as gen FROM RDB$DATABASE;")
+                $newId = DB::query(Database::SELECT, 'SELECT GEN_ID(GEN_ACCESS_ID, 1) as gen FROM RDB$DATABASE;')
                     ->execute($db)
                     ->get('GEN');
                 
                 $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
                         VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
-     echo Debug::vars('388', $sql);exit;           
+            
                 DB::query(Database::INSERT, $sql)->execute($db);
             }
         }

@@ -42,24 +42,9 @@ class Controller_AccessCategory extends Controller_Template {
 			
 			// Получаем ID уже привязанных точек
 			$assignedPoints = Model::factory('accessCategory')->getAssignedAccessPointsIds($id);
+			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
+					
 			
-			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
-		
-		// Группируем timezone по id_dev
-			$groupedTimezones = array();
-			foreach ($assignedPointsWithData as $assigned) {
-				$devId = Arr::get($assigned, 'id_dev');
-				$tzId = Arr::get($assigned, 'id_timezone');
-				if (!empty($tzId)) {
-					if (!isset($groupedTimezones[$devId])) {
-						$groupedTimezones[$devId] = array();
-					}
-					if (!in_array($tzId, $groupedTimezones[$devId])) {
-						$groupedTimezones[$devId][] = $tzId;
-					}
-				}
-			}
-			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
 
 				// Получаем список временных зон
 				$timezones = Model::factory('accessCategory')->getTimezonesList();
@@ -267,51 +252,7 @@ class Controller_AccessCategory extends Controller_Template {
         $this->redirect('accessCategory');
     }
     
-    public function action_find()
-    {
-        $search = Arr::get($_GET, 'doorInfo');
-        $_SESSION['doorEventsTimeFrom'] = Arr::get($_GET, 'timeFrom');
-        $_SESSION['doorEventsTimeTo'] = Arr::get($_GET, 'timeTo');
-        $result = Model::Factory('Door')->findIdDoor($search);
-        
-        if(count($result) > 0) {
-            $content = View::Factory('door/select', array(
-                'list' => $result,
-            ));
-            $this->template->content = $content;
-        } else {
-            $content = View::Factory('door/search');
-            $this->template->content = $content;
-        }
-    }
-    
-    public function action_getInfo($id_door = false)
-    {
-        $id_door = $this->request->param('id');
-        $_SESSION['menu_active'] = 'door';
-        
-        if ($id_door == NULL) $this->redirect('door/find');
-        
-        $door_data = Model::Factory('Door')->getDoor($id_door);
-        $door_load_order = Model::Factory('Door')->getDoorLoadorder($id_door);
-        $door_delete_order = Model::Factory('Door')->getDoorDeleteOrder($id_door);
-        $door_events = Model::Factory('Event')->event_door($id_door);
-        $key_for_door = Model::Factory('Door')->getKeysForDoor($id_door);
-        $card_type = Model::Factory('Door')->getCardType();
-        $enable_card_type = Model::Factory('Door')->getEnableCardType(Arr::get($door_data, 'ID_DEVTYPE'));
 
-        $content = View::Factory('door/view', array(
-            'door' => $door_data,
-            'people_add' => $door_load_order,
-            'people_del' => $door_delete_order,
-            'events' => $door_events,
-            'keys' => $key_for_door,
-            'card_type' => $card_type,
-            'enable_card_type' => $enable_card_type,
-        ));
-        
-        $this->template->content = $content;
-    }
 	
 	/**
 		 * Редактирование временных зон для точки прохода
@@ -381,7 +322,8 @@ class Controller_AccessCategory extends Controller_Template {
  */
 public function action_addAccessPoints()
 {
-    $this->auto_render = false;
+    
+	 $this->auto_render = false;
     header('Content-Type: application/json');
     
     if ($this->request->method() != HTTP_Request::POST) {

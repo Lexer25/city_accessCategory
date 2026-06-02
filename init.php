@@ -16,3 +16,13 @@ Route::set('accessCategory_editTimezones', 'accessCategory/editTimezones/<id>/<d
         'controller' => 'AccessCategory',
         'action' => 'editTimezones',
     ));
+	
+	// AJAX маршруты
+Route::set('accessCategory_addAccessPoints', 'accessCategory/addAccessPoints')
+    ->defaults(array('controller' => 'AccessCategory', 'action' => 'addAccessPoints'));
+
+Route::set('accessCategory_removeAccessPoints', 'accessCategory/removeAccessPoints')
+    ->defaults(array('controller' => 'AccessCategory', 'action' => 'removeAccessPoints'));
+
+Route::set('accessCategory_getCategoryData', 'accessCategory/getCategoryData/<id>', array('id' => '\d+'))
+    ->defaults(array('controller' => 'AccessCategory', 'action' => 'getCategoryData'));
