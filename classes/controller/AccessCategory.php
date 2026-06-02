@@ -314,65 +314,135 @@ class Controller_AccessCategory extends Controller_Template {
     }
 	
 	/**
- * Редактирование временных зон для точки прохода
- */
-public function action_editTimezones()
-{
+		 * Редактирование временных зон для точки прохода
+		 */
+		public function action_editTimezones()
+		{
 
-	$categoryId = (int)$this->request->param('id');
-    $deviceId = (int)$this->request->param('device_id');
+			$categoryId = (int)$this->request->param('id');
+			$deviceId = (int)$this->request->param('device_id');
+			
+			if (!$categoryId || !$deviceId) {
+				$this->redirect('accessCategory');
+			}
+			
+			// Получаем данные категории
+			$category = Model::factory('accessCategory')->getAccessCategoryById($categoryId);
+			if (empty($category)) {
+				$this->redirect('accessCategory');
+			}
+			
+			// Получаем данные точки прохода
+			$device = Model::factory('accessCategory')->getAccessPointById($deviceId);
+			if (empty($device)) {
+				$this->redirect('accessCategory/edit/' . $categoryId);
+			}
+			
+			// Получаем все временные зоны
+			$allTimezones = Model::factory('accessCategory')->getTimezonesList();
+			
+			// Получаем текущие временные зоны для этой точки
+			$selectedTimezones = Model::factory('accessCategory')->getDeviceTimezones($categoryId, $deviceId);
+			
+			// Обработка POST запроса
+			if ($this->request->method() == HTTP_Request::POST) {
+				   
+				$post = $this->request->post();
+				$selectedTimezonesPost = Arr::get($post, 'timezones', array());
+				
+				// Сохраняем временные зоны
+				$result = Model::factory('accessCategory')->saveDeviceTimezones($categoryId, $deviceId, $selectedTimezonesPost);
+				
+				if ($result) {
+					Session::instance()->set('message', __('Временные зоны успешно сохранены'));
+					Session::instance()->set('message_type', 'success');
+				} else {
+					Session::instance()->set('message', __('Ошибка при сохранении временных зон'));
+					Session::instance()->set('message_type', 'danger');
+				}
+				
+				$this->redirect('accessCategory/edit/' . $categoryId);
+			}
+			
+			$content = View::factory('accessCategory/editTimezones', array(
+				'category' => $category,
+				'device' => $device,
+				'allTimezones' => $allTimezones,
+				'selectedTimezones' => $selectedTimezones,
+				'categoryId' => $categoryId,
+				'deviceId' => $deviceId,
+			));
+			
+			$this->template->content = $content;
+		}
+		
+/**
+ * Добавление точек прохода в категорию (AJAX)
+ */
+public function action_addAccessPoints()
+{
+    $this->auto_render = false;
+    header('Content-Type: application/json');
     
-    if (!$categoryId || !$deviceId) {
-        $this->redirect('accessCategory');
+    if ($this->request->method() != HTTP_Request::POST) {
+        echo json_encode(array('success' => false, 'error' => 'Invalid request method'));
+        return;
     }
     
-    // Получаем данные категории
-    $category = Model::factory('accessCategory')->getAccessCategoryById($categoryId);
-    if (empty($category)) {
-        $this->redirect('accessCategory');
+    // Получаем параметры и явно преобразуем в целые числа
+    $categoryId = (int)$this->request->post('category_id');
+    $points = $this->request->post('points');
+    
+    // Проверяем, что points - массив
+    if (!is_array($points)) {
+        $points = array();
     }
     
-    // Получаем данные точки прохода
-    $device = Model::factory('accessCategory')->getAccessPointById($deviceId);
-    if (empty($device)) {
-        $this->redirect('accessCategory/edit/' . $categoryId);
+    // Преобразуем все ID точек в целые числа
+    $points = array_map('intval', $points);
+    
+    if ($categoryId <= 0 || empty($points)) {
+        echo json_encode(array('success' => false, 'error' => 'Invalid parameters: category_id=' . $categoryId . ', points=' . print_r($points, true)));
+        return;
     }
     
-    // Получаем все временные зоны
-    $allTimezones = Model::factory('accessCategory')->getTimezonesList();
+    $result = Model::factory('accessCategory')->addAccessPoints($categoryId, $points);
     
-    // Получаем текущие временные зоны для этой точки
-    $selectedTimezones = Model::factory('accessCategory')->getDeviceTimezones($categoryId, $deviceId);
+    echo json_encode(array('success' => $result));
+}
+
+/**
+ * Удаление точек прохода из категории (AJAX)
+ */
+public function action_removeAccessPoints()
+{
+    $this->auto_render = false;
+    header('Content-Type: application/json');
     
-    // Обработка POST запроса
-    if ($this->request->method() == HTTP_Request::POST) {
-		   
-        $post = $this->request->post();
-        $selectedTimezonesPost = Arr::get($post, 'timezones', array());
-        
-        // Сохраняем временные зоны
-        $result = Model::factory('accessCategory')->saveDeviceTimezones($categoryId, $deviceId, $selectedTimezonesPost);
-        
-        if ($result) {
-            Session::instance()->set('message', __('Временные зоны успешно сохранены'));
-            Session::instance()->set('message_type', 'success');
-        } else {
-            Session::instance()->set('message', __('Ошибка при сохранении временных зон'));
-            Session::instance()->set('message_type', 'danger');
-        }
-        
-        $this->redirect('accessCategory/edit/' . $categoryId);
+    if ($this->request->method() != HTTP_Request::POST) {
+        echo json_encode(array('success' => false, 'error' => 'Invalid request method'));
+        return;
     }
     
-    $content = View::factory('accessCategory/editTimezones', array(
-        'category' => $category,
-        'device' => $device,
-        'allTimezones' => $allTimezones,
-        'selectedTimezones' => $selectedTimezones,
-        'categoryId' => $categoryId,
-        'deviceId' => $deviceId,
-    ));
+    // Получаем параметры и явно преобразуем в целые числа
+    $categoryId = (int)$this->request->post('category_id');
+    $points = $this->request->post('points');
     
-    $this->template->content = $content;
+    // Проверяем, что points - массив
+    if (!is_array($points)) {
+        $points = array();
+    }
+    
+    // Преобразуем все ID точек в целые числа
+    $points = array_map('intval', $points);
+    
+    if ($categoryId <= 0 || empty($points)) {
+        echo json_encode(array('success' => false, 'error' => 'Invalid parameters'));
+        return;
+    }
+    
+    $result = Model::factory('accessCategory')->removeAccessPoints($categoryId, $points);
+    
+    echo json_encode(array('success' => $result));
 }
 }

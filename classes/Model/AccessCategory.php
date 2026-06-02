@@ -317,46 +317,108 @@ public function getDeviceTimezones($categoryId, $deviceId)
     return $timezones;
 }
 
-/**
- * Сохранить временные зоны для точки прохода в категории
+		/**
+		 * Сохранить временные зоны для точки прохода в категории
+		 */
+		public function saveDeviceTimezones($categoryId, $deviceId, $timezones)
+		{
+			try {
+				$db = Database::instance('fb');
+				
+				// Удаляем существующие связи для этой точки
+				DB::query(Database::DELETE, "DELETE FROM access 
+					WHERE id_accessname = " . intval($categoryId) . " 
+					AND id_dev = " . intval($deviceId))
+					->execute($db);
+				
+				// Добавляем новые связи
+				if (!empty($timezones)) {
+					foreach ($timezones as $timezoneId) {
+						if (empty($timezoneId)) continue;
+						
+		 
+						
+						$sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
+								VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
+					   // echo Debug::vars('343', $sql);exit;
+						DB::query(Database::INSERT, $sql)->execute($db);
+					}
+				} else {
+					// Если временных зон нет, создаем запись с NULL временной зоной
+
+					
+					$sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
+							VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
+					
+					DB::query(Database::INSERT, $sql)->execute($db);
+				}
+				
+				return true;
+			} catch (Exception $e) {
+				Kohana::$log->add(Log::ERROR, 'Error saving device timezones: ' . $e->getMessage());
+				return false;
+			}
+		}
+		
+		/**
+ * Добавление точек прохода в категорию
  */
-public function saveDeviceTimezones($categoryId, $deviceId, $timezones)
+public function addAccessPoints($categoryId, $points)
 {
     try {
         $db = Database::instance('fb');
         
-        // Удаляем существующие связи для этой точки
-        DB::query(Database::DELETE, "DELETE FROM access 
-            WHERE id_accessname = " . intval($categoryId) . " 
-            AND id_dev = " . intval($deviceId))
-            ->execute($db);
-        
-        // Добавляем новые связи
-        if (!empty($timezones)) {
-            foreach ($timezones as $timezoneId) {
-                if (empty($timezoneId)) continue;
+        foreach ($points as $deviceId) {
+            // Проверяем, существует ли уже такая связь
+            $checkSql = "SELECT COUNT(*) as cnt FROM access 
+                         WHERE id_accessname = " . intval($categoryId) . " 
+                         AND id_dev = " . intval($deviceId);
+            
+            $exists = DB::query(Database::SELECT, $checkSql)
+                ->execute($db)
+                ->get('cnt', 0);
+            
+            if ($exists == 0) {
+                $newId = DB::query(Database::SELECT, "SELECT GEN_ID(GEN_ACCESS_ID, 1) as gen FROM RDB$DATABASE;")
+                    ->execute($db)
+                    ->get('GEN');
                 
- 
-                
-                $sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
-                        VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
-               // echo Debug::vars('343', $sql);exit;
+                $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
+                        VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
+     echo Debug::vars('388', $sql);exit;           
                 DB::query(Database::INSERT, $sql)->execute($db);
             }
-        } else {
-            // Если временных зон нет, создаем запись с NULL временной зоной
-
-            
-            $sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
-                    VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
-            
-            DB::query(Database::INSERT, $sql)->execute($db);
         }
         
         return true;
     } catch (Exception $e) {
-        Kohana::$log->add(Log::ERROR, 'Error saving device timezones: ' . $e->getMessage());
+        Kohana::$log->add(Log::ERROR, 'Error adding access points: ' . $e->getMessage());
         return false;
     }
 }
+
+		/**
+		 * Удаление точек прохода из категории
+		 */
+		public function removeAccessPoints($categoryId, $points)
+		{
+			try {
+				$db = Database::instance('fb');
+				
+				foreach ($points as $deviceId) {
+					$sql = "DELETE FROM access 
+							WHERE id_accessname = " . intval($categoryId) . " 
+							AND id_dev = " . intval($deviceId);
+					
+					DB::query(Database::DELETE, $sql)->execute($db);
+				}
+				
+				return true;
+			} catch (Exception $e) {
+				Kohana::$log->add(Log::ERROR, 'Error removing access points: ' . $e->getMessage());
+				return false;
+			}
+		}
+
+
 }
