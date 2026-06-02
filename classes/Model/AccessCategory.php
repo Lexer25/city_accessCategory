@@ -328,6 +328,7 @@ public function getDeviceTimezones($categoryId, $deviceId)
 		 */
 		public function saveDeviceTimezones($categoryId, $deviceId, $timezones)
 		{
+			Kohana::$log->add(Log::DEBUG, '331 timezones ' . Debug::vars($timezones));	
 			try {
 				$db = Database::instance('fb');
 				
@@ -340,13 +341,13 @@ public function getDeviceTimezones($categoryId, $deviceId)
 				// Добавляем новые связи
 				if (!empty($timezones)) {
 					foreach ($timezones as $timezoneId) {
-						if (empty($timezoneId)) continue;
+						if ($timezoneId === null || $timezoneId === '') continue ;
 						
 		 
 						
 						$sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
 								VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
-					   // echo Debug::vars('343', $sql);exit;
+		Kohana::$log->add(Log::DEBUG, '349 sql ' . $sql);			  
 						DB::query(Database::INSERT, $sql)->execute($db);
 					}
 				} else {
