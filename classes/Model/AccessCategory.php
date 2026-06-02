@@ -336,23 +336,19 @@ public function saveDeviceTimezones($categoryId, $deviceId, $timezones)
             foreach ($timezones as $timezoneId) {
                 if (empty($timezoneId)) continue;
                 
-                $newId = DB::query(Database::SELECT, "SELECT COALESCE(MAX(id_access), 0) + 1 as new_id FROM access")
-                    ->execute($db)
-                    ->get('new_id', 1);
+ 
                 
-                $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
-                        VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
-                
+                $sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
+                        VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", " . intval($timezoneId) . ")";
+               // echo Debug::vars('343', $sql);exit;
                 DB::query(Database::INSERT, $sql)->execute($db);
             }
         } else {
             // Если временных зон нет, создаем запись с NULL временной зоной
-            $newId = DB::query(Database::SELECT, "SELECT COALESCE(MAX(id_access), 0) + 1 as new_id FROM access")
-                ->execute($db)
-                ->get('new_id', 1);
+
             
-            $sql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
-                    VALUES (" . intval($newId) . ", 1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
+            $sql = "INSERT INTO access (id_db, id_accessname, id_dev, id_timezone) 
+                    VALUES (1, " . intval($categoryId) . ", " . intval($deviceId) . ", NULL)";
             
             DB::query(Database::INSERT, $sql)->execute($db);
         }
