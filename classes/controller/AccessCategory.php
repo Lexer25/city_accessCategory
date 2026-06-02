@@ -44,7 +44,7 @@ class Controller_AccessCategory extends Controller_Template {
 			$assignedPoints = Model::factory('accessCategory')->getAssignedAccessPointsIds($id);
 			$assignedPointsWithData = Model::factory('accessCategory')->getAccessPointsByCategoryId($id);
 					
-			
+			$groupedDevices = Model::factory('AccessCategory')->groupByDevice($assignedPointsWithData);
 
 				// Получаем список временных зон
 				$timezones = Model::factory('accessCategory')->getTimezonesList();
@@ -104,7 +104,7 @@ class Controller_AccessCategory extends Controller_Template {
 				}
 				
 				// Если есть ошибки, показываем форму с ошибками
-				$groupedDevices = $this->groupByDevice($assignedPointsWithData);
+				
 				$content = View::factory('accessCategory/edit', array(
 					'category' => $category,
 					'allPoints' => $allPoints,
@@ -118,9 +118,8 @@ class Controller_AccessCategory extends Controller_Template {
 				));
 			} else {
 				// GET запрос - показываем форму
-				//echo Debug::vars('134', $assignedPointsWithData);//exit;
-				//echo Debug::vars('135', $this->groupByDevice($assignedPointsWithData));exit;
-				$groupedDevices = $this->groupByDevice($assignedPointsWithData);
+				
+				
 				$content = View::factory('accessCategory/edit', array(
 					'category' => $category,
 					'allPoints' => $allPoints,
@@ -150,7 +149,7 @@ class Controller_AccessCategory extends Controller_Template {
 			 * @param bool $removeDuplicates Удалять дубликаты таймзон (по умолчанию true)
 			 * @return array Сгруппированный массив
 			 */
-			private function groupByDevice($inputArray, $idKey = 'id_dev', $nameKey = 'name', $timezoneKey = 'id_timezone', $removeDuplicates = true) {
+			public function groupByDevice($inputArray, $idKey = 'id_dev', $nameKey = 'name', $timezoneKey = 'id_timezone', $removeDuplicates = true) {
 				$result = [];
 				
 				foreach ($inputArray as $item) {

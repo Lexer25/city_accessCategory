@@ -235,7 +235,7 @@
                               '<td>' + point.id + '</td>' +
                               '<td>' + point.name + '</td>' +
                               '<td><span class="text-muted">—</span></td>' +
-                              '<td><a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/'); ?>' + point.id + '" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?></a></td>');
+                              '<td><a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname')); ?>/' + point.id + '" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?></a></td>'
                     $tbody.append($row);
                 }
             }

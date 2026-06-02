@@ -426,5 +426,31 @@ public function addAccessPoints($categoryId, $points)
 			}
 		}
 
-
+			// В модели Model_AccessCategory.php
+		public function groupByDevice($inputArray, $idKey = 'id_dev', $nameKey = 'name', $timezoneKey = 'id_timezone', $removeDuplicates = true) {
+			$result = [];
+			
+			foreach ($inputArray as $item) {
+				$id = $item[$idKey];
+				
+				if (!isset($result[$id])) {
+					$result[$id] = [
+						$nameKey => $item[$nameKey],
+						$timezoneKey => []
+					];
+				}
+				
+				if ($item[$timezoneKey] !== null) {
+					$result[$id][$timezoneKey][] = $item[$timezoneKey];
+					
+					if ($removeDuplicates) {
+						$result[$id][$timezoneKey] = array_values(array_unique($result[$id][$timezoneKey]));
+					}
+				} else {
+					$result[$id][$timezoneKey] = null;
+				}
+			}
+			
+			return $result;
+		}
 }

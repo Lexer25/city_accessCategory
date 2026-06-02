@@ -65,7 +65,8 @@
                     </thead>
                     <tbody>
                         <?php foreach ($acList as $key => $category): 
-                            $accessPoints = Model::factory('accessCategory')->getAccessPointsByCategoryId(Arr::get($category, 'id_accessname'));
+                            //$accessPoints = Model::factory('accessCategory')->getAccessPointsByCategoryId(Arr::get($category, 'id_accessname'));
+							$accessPoints = Model::factory('AccessCategory')->groupByDevice(Model::factory('accessCategory')->getAccessPointsByCategoryId(Arr::get($category, 'id_accessname')));
                             $pointsText = '';
                             $pointsList = array();
                             foreach ($accessPoints as $point) {
