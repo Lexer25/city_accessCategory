@@ -17,37 +17,45 @@
         <form method="POST" action="<?php echo URL::site('accessCategory/edit/' . Arr::get($category, 'id_accessname')); ?>" id="editForm">
             <div class="row">
                 <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="id"><?php echo __('ID'); ?></label>
-                        <input type="text" class="form-control" id="id" value="<?php echo htmlspecialchars(Arr::get($category, 'id_accessname')); ?>" disabled>
-                    </div>
-                    
-                    <div class="form-group <?php echo isset($errors['name']) ? 'has-error' : ''; ?>">
-                        <label for="name"><?php echo __('Название категории'); ?> *</label>
-                        <input type="text" class="form-control" id="name" name="name" 
-                               value="<?php echo isset($post['name']) ? htmlspecialchars($post['name']) : htmlspecialchars(Arr::get($category, 'name')); ?>" 
-                               required>
-                        <?php if (isset($errors['name'])): ?>
-                            <span class="help-block"><?php echo $errors['name']; ?></span>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="guid"><?php echo __('GUID'); ?></label>
-                        <input type="text" class="form-control" id="guid" name="guid" 
-                               value="<?php echo isset($post['guid']) ? htmlspecialchars($post['guid']) : htmlspecialchars(Arr::get($category, 'guid')); ?>">
-                        <small class="form-text text-muted"><?php echo __('Оставьте пустым для автоматической генерации'); ?></small>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="time_stamp"><?php echo __('Дата создания'); ?></label>
-                        <input type="text" class="form-control" id="time_stamp" value="<?php echo htmlspecialchars(Arr::get($category, 'time_stamp')); ?>" disabled>
+                    <!-- Блок информации о категории -->
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h4 class="panel-title"><?php echo __('Информация о категории'); ?></h4>
+                        </div>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="id"><?php echo __('ID'); ?></label>
+                                <input type="text" class="form-control" id="id" value="<?php echo htmlspecialchars(Arr::get($category, 'id_accessname')); ?>" disabled>
+                            </div>
+                            
+                            <div class="form-group <?php echo isset($errors['name']) ? 'has-error' : ''; ?>">
+                                <label for="name"><?php echo __('Название категории'); ?> *</label>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="<?php echo isset($post['name']) ? htmlspecialchars($post['name']) : htmlspecialchars(Arr::get($category, 'name')); ?>" 
+                                       required>
+                                <?php if (isset($errors['name'])): ?>
+                                    <span class="help-block"><?php echo $errors['name']; ?></span>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="guid"><?php echo __('GUID'); ?></label>
+                                <input type="text" class="form-control" id="guid" name="guid" 
+                                       value="<?php echo isset($post['guid']) ? htmlspecialchars($post['guid']) : htmlspecialchars(Arr::get($category, 'guid')); ?>">
+                                <small class="form-text text-muted"><?php echo __('Оставьте пустым для автоматической генерации'); ?></small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="time_stamp"><?php echo __('Дата создания'); ?></label>
+                                <input type="text" class="form-control" id="time_stamp" value="<?php echo htmlspecialchars(Arr::get($category, 'time_stamp')); ?>" disabled>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Информация о выбранных точках -->
                     <div class="panel panel-default" style="margin-top: 15px;">
                         <div class="panel-heading">
-                            <h4 class="panel-title"><?php echo __('Информация'); ?></h4>
+                            <h4 class="panel-title"><?php echo __('Статистика'); ?></h4>
                         </div>
                         <div class="panel-body">
                             <div class="form-group">
@@ -71,13 +79,9 @@
                                 <div class="col-md-8">
                                     <select id="availablePointsSelect" class="form-control" multiple size="10" style="height: 200px;">
                                         <?php 
-                                        // Получаем ID точек, уже входящих в категорию
-                                        $assignedIds = array();
-                                        foreach ($assignedPointsWithData as $assigned) {
-                                            $assignedIds[] = Arr::get($assigned, 'id_dev');
-                                        }
+                                        // Используем уже готовые сгруппированные данные
+                                        $assignedIds = array_keys($groupedDevices);
                                         
-                                        // Показываем только точки, не входящие в категорию
                                         foreach ($allPoints as $point): 
                                             if (!in_array(Arr::get($point, 'id_dev'), $assignedIds)):
                                         ?>
@@ -106,83 +110,81 @@
                         </div>
                     </div>
                     
-<!-- Блок с уже добавленными точками -->
-<div class="panel panel-default" style="margin-top: 15px;">
-    <div class="panel-heading">
-        <h4 class="panel-title">
-            <?php echo __('Точки прохода в категории'); ?>
-            <div class="btn-group pull-right">
-                <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger">
-                    <span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
-                </button>
-            </div>
-        </h4>
-    </div>
-    <div class="panel-body" style="padding: 0;">
-        <div class="table-responsive">
-            <table class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
-                <thead>
-                    <tr class="active">
-                        <th width="5%"><input type="checkbox" id="selectAllAssigned"></th>
-                        <th width="8%"><?php echo __('ID'); ?></th>
-                        <th width="52%"><?php echo __('Название точки прохода'); ?></th>
-                        <th width="20%"><?php echo __('Временные зоны'); ?></th>
-                        <th width="15%"><?php echo __('Действия'); ?></th>
-                    </tr>
-                </thead>
-                <tbody id="assignedPointsBody">
-                    <?php if(count($assignedPointsWithData) > 0): ?>
-                        <?php foreach ($assignedPointsWithData as $point): 
-                            $timezoneIds = isset($groupedTimezones[Arr::get($point, 'id_dev')]) 
-                                ? $groupedTimezones[Arr::get($point, 'id_dev')] 
-                                : array();
-                            $tzId = Arr::get($point, 'id_timezone');
-                            if (!empty($tzId) && !in_array($tzId, $timezoneIds)) {
-                                $timezoneIds[] = $tzId;
-                            }
-                            $timezoneIds = array_unique($timezoneIds);
-                        ?>
-                            <tr data-id="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>">
-                                <td class="text-center">
-                                    <input type="checkbox" class="assigned-checkbox" value="<?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?>">
-                                </td>
-                                <td><?php echo htmlspecialchars(Arr::get($point, 'id_dev')); ?></td>
-                                <td><?php echo htmlspecialchars(Arr::get($point, 'name')); ?></td>
-                                <td>
-                                    <?php if(!empty($timezoneIds)): ?>
-                                        <?php foreach ($timezoneIds as $tzId): ?>
-                                            <?php 
-                                            $tzName = isset($timezonesMap[$tzId]) ? $timezonesMap[$tzId] : $tzId;
-                                            ?>
-                                            <span class="label label-info" style="margin-right: 3px; display: inline-block; margin-bottom: 2px;">
-                                                <?php echo htmlspecialchars($tzName); ?>
-                                            </span>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/' . Arr::get($point, 'id_dev')); ?>" 
-                                       class="btn btn-xs btn-primary" 
-                                       title="<?php echo __('Редактировать временные зоны'); ?>">
-                                        <span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?>
-                                    </a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <tr id="noAssignedDataRow">
-                            <td colspan="5" class="text-center text-muted">
-                                <?php echo __('Нет точек прохода в этой категории'); ?>
-                            </td>
-                        </tr>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+                    <!-- Блок с уже добавленными точками -->
+                    <div class="panel panel-default" style="margin-top: 15px;">
+                        <div class="panel-heading">
+                            <h4 class="panel-title">
+                                <?php echo __('Точки прохода в категории'); ?>
+                                <div class="btn-group pull-right">
+                                    <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger">
+                                        <span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
+                                    </button>
+                                </div>
+                            </h4>
+                        </div>
+                        <div class="panel-body" style="padding: 0;">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
+                                    <thead>
+                                        <tr class="active">
+                                            <th width="5%"><input type="checkbox" id="selectAllAssigned"></th>
+                                            <th width="8%"><?php echo __('ID'); ?></th>
+                                            <th width="52%"><?php echo __('Название точки прохода'); ?></th>
+                                            <th width="20%"><?php echo __('Временные зоны'); ?></th>
+                                            <th width="15%"><?php echo __('Действия'); ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assignedPointsBody">
+                                        <?php 
+                                        if(count($groupedDevices) > 0): 
+                                            foreach ($groupedDevices as $devId => $deviceData): 
+                                        ?>
+                                            <tr data-id="<?php echo htmlspecialchars($devId); ?>">
+                                                <td class="text-center">
+                                                    <input type="checkbox" class="assigned-checkbox" value="<?php echo htmlspecialchars($devId); ?>">
+                                                </td>
+                                                <td><?php echo htmlspecialchars($devId); ?></td>
+                                                <td><?php echo htmlspecialchars($deviceData['name']); ?></td>
+                                                <td>
+                                                    <?php 
+                                                    $timezoneIds = $deviceData['id_timezone'];
+                                                    if(!empty($timezoneIds) && is_array($timezoneIds)): 
+                                                        foreach ($timezoneIds as $tzId): 
+                                                            $tzName = isset($timezonesMap[$tzId]) ? $timezonesMap[$tzId] : $tzId;
+                                                    ?>
+                                                        <span class="label label-info" style="margin-right: 3px; display: inline-block; margin-bottom: 2px;">
+                                                            <?php echo htmlspecialchars($tzName); ?>
+                                                        </span>
+                                                    <?php 
+                                                        endforeach; 
+                                                    else: 
+                                                    ?>
+                                                        <span class="text-muted">—</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td>
+                                                    <a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/' . $devId); ?>" 
+                                                       class="btn btn-xs btn-primary" 
+                                                       title="<?php echo __('Редактировать временные зоны'); ?>">
+                                                        <span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        <?php 
+                                            endforeach; 
+                                        else: 
+                                        ?>
+                                            <tr id="noAssignedDataRow">
+                                                <td colspan="5" class="text-center text-muted">
+                                                    <?php echo __('Нет точек прохода в этой категории'); ?>
+                                                </td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -208,8 +210,10 @@
         var selectedPoints = [];
         
         // Инициализация массива существующими точками
-        <?php foreach ($assignedPointsWithData as $point): ?>
-            selectedPoints.push(<?php echo json_encode(Arr::get($point, 'id_dev')); ?>);
+        <?php 
+        foreach ($groupedDevices as $devId => $deviceData): 
+        ?>
+            selectedPoints.push(<?php echo json_encode($devId); ?>);
         <?php endforeach; ?>
         
         // Функция обновления счетчика
@@ -228,7 +232,7 @@
             $tbody.empty();
             
             if (selectedPoints.length === 0) {
-                $tbody.append('<tr id="noAssignedDataRow"><td colspan="4" class="text-center text-muted"><?php echo __('Нет точек прохода в этой категории'); ?></td></tr>');
+                $tbody.append('<tr id="noAssignedDataRow"><td colspan="5" class="text-center text-muted"><?php echo __('Нет точек прохода в этой категории'); ?></td></tr>');
                 updateSelectedCount();
                 return;
             }
@@ -252,7 +256,8 @@
                     $row.html('<td class="text-center"><input type="checkbox" class="assigned-checkbox" value="' + point.id + '"></td>' +
                               '<td>' + point.id + '</td>' +
                               '<td>' + point.name + '</td>' +
-                              '<td><span class="text-muted">—</span></td>');
+                              '<td><span class="text-muted">—</span></td>' +
+                              '<td><a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/'); ?>' + point.id + '" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?></a></td>');
                     $tbody.append($row);
                 }
             }

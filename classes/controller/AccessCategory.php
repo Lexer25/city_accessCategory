@@ -22,6 +22,7 @@ class Controller_AccessCategory extends Controller_Template {
 		 */
 		public function action_edit()
 		{
+
 			//$this->template->full_width = true;
 			$id = $this->request->param('id');
 			
@@ -118,11 +119,13 @@ class Controller_AccessCategory extends Controller_Template {
 				}
 				
 				// Если есть ошибки, показываем форму с ошибками
+				$groupedDevices = $this->groupByDevice($assignedPointsWithData);
 				$content = View::factory('accessCategory/edit', array(
 					'category' => $category,
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData, 
+					'groupedDevices' => $groupedDevices, 
 					 'groupedTimezones' => $groupedTimezones,  // Добавьте эту строку
 					 'timezonesMap' => $timezonesMap,  // Добавьте эту строку
 					'errors' => $errors,
@@ -130,11 +133,15 @@ class Controller_AccessCategory extends Controller_Template {
 				));
 			} else {
 				// GET запрос - показываем форму
+				//echo Debug::vars('134', $assignedPointsWithData);//exit;
+				//echo Debug::vars('135', $this->groupByDevice($assignedPointsWithData));exit;
+				$groupedDevices = $this->groupByDevice($assignedPointsWithData);
 				$content = View::factory('accessCategory/edit', array(
 					'category' => $category,
 					'allPoints' => $allPoints,
 					'assignedPoints' => $assignedPoints,
 					'assignedPointsWithData' => $assignedPointsWithData,
+					'groupedDevices' => $groupedDevices,
 					 'groupedTimezones' => $groupedTimezones,  // Добавьте эту строку
 					 'timezonesMap' => $timezonesMap,  // Добавьте эту строку
 					'errors' => array(),
@@ -144,6 +151,50 @@ class Controller_AccessCategory extends Controller_Template {
 			
 			$this->template->content = $content;
 		}
+		
+		
+	
+
+			/**
+			 * Группирует массив устройств по id_dev
+			 *
+			 * @param array $inputArray Исходный массив
+			 * @param string $idKey Ключ для группировки (по умолчанию 'id_dev')
+			 * @param string $nameKey Ключ с названием (по умолчанию 'name')
+			 * @param string $timezoneKey Ключ с таймзоной (по умолчанию 'id_timezone')
+			 * @param bool $removeDuplicates Удалять дубликаты таймзон (по умолчанию true)
+			 * @return array Сгруппированный массив
+			 */
+			private function groupByDevice($inputArray, $idKey = 'id_dev', $nameKey = 'name', $timezoneKey = 'id_timezone', $removeDuplicates = true) {
+				$result = [];
+				
+				foreach ($inputArray as $item) {
+					$id = $item[$idKey];
+					
+					if (!isset($result[$id])) {
+						$result[$id] = [
+							$nameKey => $item[$nameKey],
+							$timezoneKey => []
+						];
+					}
+					
+					if ($item[$timezoneKey] !== null) {
+						$result[$id][$timezoneKey][] = $item[$timezoneKey];
+						
+						if ($removeDuplicates) {
+							$result[$id][$timezoneKey] = array_values(array_unique($result[$id][$timezoneKey]));
+						}
+					} else {
+						$result[$id][$timezoneKey] = null;
+					}
+				}
+				
+				return $result;
+			}
+
+
+
+	
     
     /**
      * Добавление новой категории доступа
@@ -267,7 +318,8 @@ class Controller_AccessCategory extends Controller_Template {
  */
 public function action_editTimezones()
 {
-    $categoryId = (int)$this->request->param('id');
+
+	$categoryId = (int)$this->request->param('id');
     $deviceId = (int)$this->request->param('device_id');
     
     if (!$categoryId || !$deviceId) {
@@ -294,6 +346,7 @@ public function action_editTimezones()
     
     // Обработка POST запроса
     if ($this->request->method() == HTTP_Request::POST) {
+		   
         $post = $this->request->post();
         $selectedTimezonesPost = Arr::get($post, 'timezones', array());
         
