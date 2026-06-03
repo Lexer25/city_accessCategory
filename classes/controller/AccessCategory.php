@@ -2,11 +2,53 @@
 
 class Controller_AccessCategory extends Controller_Template { 
 
-    public function before()
-    {
-        parent::before();
-        $session = Session::instance();
+   public function before()
+{
+    $action = $this->request->action();
+    $method = $this->request->method();
+    
+  
+    // Правила: какие экшены требуют admin для определенных HTTP методов
+    $restricted = [
+        'edit'               => ['POST'],
+        'add'                => ['POST'],
+        'delete'             => ['POST', 'GET'],
+        'editTimezones'      => ['POST'],
+        'addAccessPoints'    => ['POST'],
+        'removeAccessPoints' => ['POST'],
+    ];
+  
+    // Проверяем, требуется ли авторизация для текущего экшена и метода
+    if (isset($restricted[$action]) && in_array($method, $restricted[$action])) {
+        if (!Auth::instance()->logged_in('admin')) {
+            // Для AJAX запросов возвращаем JSON с ошибкой
+            if ($this->request->is_ajax()) {
+               
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false, 
+                    'error' => 'Требуется авторизация для выполнения этого действия'
+                ]);
+                exit; // Полный выход из скрипта
+            }
+            
+         
+            
+            // Отключаем авто-рендеринг шаблона
+            $this->auto_render = false;
+            
+            // Выводим сообщение напрямую
+            echo '<div class="container"><div class="alert alert-danger">';
+            echo 'Требуется авторизация для выполнения этого действия';
+            echo '</div><a href="/city/index.php/accessCategory" class="btn btn-primary">Вернуться назад</a></div>';
+            exit; // Полный выход из скрипта
+        }
     }
+    
+    // Только если проверка пройдена, вызываем родительский before()
+    parent::before();
+    $session = Session::instance();
+}
     
     public function action_index()
     {
