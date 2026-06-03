@@ -75,7 +75,7 @@
                                     <?php echo __('Можно выбрать несколько временных зон'); ?>
                                 </small>
                             </div>
-                            
+                            <?php if ($is_admin){ ?>
                             <div class="form-group">
                                 <button type="submit" class="btn btn-primary">
                                     <span class="glyphicon glyphicon-save"></span> <?php echo __('Сохранить'); ?>
@@ -84,6 +84,7 @@
                                     <span class="glyphicon glyphicon-ban-circle"></span> <?php echo __('Отмена'); ?>
                                 </a>
                             </div>
+							<?php }; ?>
                         </form>
                     </div>
                 </div>

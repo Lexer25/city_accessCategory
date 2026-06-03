@@ -45,6 +45,10 @@ class Controller_AccessCategory extends Controller_Template {
         }
     }
     
+	// Передаем в шаблон флаг авторизации
+    $this->is_admin = Auth::instance()->logged_in('admin');
+    View::bind_global('is_admin', $this->is_admin);
+	
     // Только если проверка пройдена, вызываем родительский before()
     parent::before();
     $session = Session::instance();
