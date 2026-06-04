@@ -73,7 +73,8 @@
                     <div class="panel-body">
                         <div class="row">
                             <div class="col-md-8">
-                                <select id="availablePointsSelect" class="form-control" multiple size="10" style="height: 200px;">
+                                <select id="availablePointsSelect" class="form-control" multiple size="10" style="height: 200px;" 
+                                    <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
                                     <?php 
                                     // Используем уже готовые сгруппированные данные
                                     $assignedIds = array_keys($groupedDevices);
@@ -90,14 +91,14 @@
                                     ?>
                                 </select>
                             </div>
-							
+                            
                             <div class="col-md-4">
                                 <button type="button" id="addSelectedPoints" class="btn btn-success btn-block" 
-									<?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
-									<span class="glyphicon glyphicon-arrow-right"></span> <?php echo __('Добавить выбранные'); ?>
-								</button>
+                                    <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
+                                    <span class="glyphicon glyphicon-arrow-right"></span> <?php echo __('Добавить выбранные'); ?>
+                                </button>
                             </div>
-							
+                            
                         </div>
                         <div class="row" style="margin-top: 10px;">
                             <div class="col-md-12">
@@ -114,14 +115,14 @@
                     <div class="panel-heading">
                         <h4 class="panel-title">
                             <?php echo __('Точки прохода в категории'); ?>
-							
+                            
                             <div class="btn-group pull-right">
                                 <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger"
-									<?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
-									<span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
-								</button>
+                                    <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
+                                    <span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
+                                </button>
                             </div>
-							
+                            
                         </h4>
                     </div>
                     <div class="panel-body" style="padding: 0;">
@@ -129,7 +130,10 @@
                             <table class="table table-striped table-hover table-condensed table-bordered" style="margin-bottom: 0;">
                                 <thead>
                                     <tr class="active">
-                                        <th width="5%"><input type="checkbox" id="selectAllAssigned"></th>
+                                        <th width="5%">
+                                            <input type="checkbox" id="selectAllAssigned" 
+                                                <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
+                                        </th>
                                         <th width="8%"><?php echo __('ID'); ?></th>
                                         <th width="52%"><?php echo __('Название точки прохода'); ?></th>
                                         <th width="20%"><?php echo __('Временные зоны'); ?></th>
@@ -143,7 +147,8 @@
                                     ?>
                                         <tr data-id="<?php echo htmlspecialchars($devId); ?>">
                                             <td class="text-center">
-                                                <input type="checkbox" class="assigned-checkbox" value="<?php echo htmlspecialchars($devId); ?>">
+                                                <input type="checkbox" class="assigned-checkbox" value="<?php echo htmlspecialchars($devId); ?>"
+                                                    <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
                                             </td>
                                             <td><?php echo htmlspecialchars($devId); ?></td>
                                             <td><?php echo htmlspecialchars($deviceData['name']); ?></td>
@@ -164,13 +169,13 @@
                                                     <span class="text-muted">—</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td>
-                                                <a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/' . $devId); ?>" 
-                                                   class="btn btn-xs btn-primary" 
-                                                   title="<?php echo __('Редактировать временные зоны'); ?>">
-                                                    <span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?>
-                                                </a>
-                                            </td>
+											<td>
+												<a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname') . '/' . $devId); ?>" 
+												   class="btn btn-xs btn-primary" 
+												   title="<?php echo __('Просмотр и редактирование временных зон'); ?>">
+													<span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?>
+												</a>
+											</td>
                                         </tr>
                                     <?php 
                                         endforeach; 
@@ -189,6 +194,13 @@
                 </div>
             </div>
         </div>
+        
+        <?php if (!$is_admin): ?>
+            <div class="alert alert-info text-center" style="margin-top: 15px;">
+                <span class="glyphicon glyphicon-lock"></span> 
+                <?php echo __('Режим только для просмотра. Для редактирования категории необходимы права администратора.'); ?>
+            </div>
+        <?php endif; ?>
         
     </div>
 </div>
@@ -263,15 +275,18 @@
                         timezonesHtml = '<span class="text-muted">—</span>';
                     }
                     
-                    var $row = $('<tr>');
-                    $row.attr('data-id', point.id);
-                    $row.html('<td class="text-center"><input type="checkbox" class="assigned-checkbox" value="' + point.id + '"></td>' +
-                              '<td>' + point.id + '</td>' +
-                              '<td>' + point.name + '</td>' +
-                              '<td>' + timezonesHtml + '</td>' +
-                              '<td><a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname')); ?>/' + point.id + '" class="btn btn-xs btn-primary"><span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?></a></td>');
-                    $tbody.append($row);
-                }
+					var disabledCheckbox = <?php echo $is_admin ? 'false' : 'true'; ?>;
+					var checkboxDisabled = disabledCheckbox ? ' disabled title="<?php echo __('Доступно только администраторам'); ?>"' : '';
+
+					var $row = $('<tr>');
+					$row.attr('data-id', point.id);
+					$row.html('<td class="text-center"><input type="checkbox" class="assigned-checkbox" value="' + point.id + '"' + checkboxDisabled + '></td>' +
+							  '<td>' + point.id + '</td>' +
+							  '<td>' + point.name + '</td>' +
+							  '<td>' + timezonesHtml + '</td>' +
+							  '<td><a href="<?php echo URL::site('accessCategory/editTimezones/' . Arr::get($category, 'id_accessname')); ?>/' + point.id + '" class="btn btn-xs btn-primary" title="<?php echo __('Просмотр и редактирование временных зон'); ?>"><span class="glyphicon glyphicon-time"></span> <?php echo __('Врем. зоны'); ?></a></td>');
+										$tbody.append($row);
+									}
             }
             
             updateSelectedCount();
@@ -292,6 +307,7 @@
             <?php endforeach; ?>
         }
         
+        <?php if ($is_admin): ?>
         // Добавление выбранных точек
         $("#addSelectedPoints").on("click", function() {
             var selectedOptions = $("#availablePointsSelect option:selected");
@@ -435,6 +451,7 @@
             var checked = $(".assigned-checkbox:checked").length;
             $("#selectAllAssigned").prop("checked", total === checked && total > 0);
         });
+        <?php endif; ?>
         
         // Подсветка строки при наведении
         $(document).on("mouseenter", "#assignedPointsBody tr", function() {
@@ -474,5 +491,16 @@
     #selectedCount {
         font-size: 24px;
         padding: 5px 15px;
+    }
+    
+    .disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    select:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
     }
 </style>

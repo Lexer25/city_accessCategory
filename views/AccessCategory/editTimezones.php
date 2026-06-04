@@ -109,3 +109,22 @@
         
     </div>
 </div>
+<style>
+<style>
+    .disabled {
+        pointer-events: none;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    input[disabled] + label,
+    input[disabled] {
+        cursor: not-allowed;
+    }
+    
+    .checkbox.disabled label,
+    .checkbox label.disabled {
+        color: #999;
+    }
+</style>
+</style>

@@ -332,7 +332,7 @@ public function getDeviceTimezones($categoryId, $deviceId)
 			try {
 				$db = Database::instance('fb');
 				
-				// Удаляем существующие связи для этой точки
+				// Удаляем существующие связи для этой точки - этого делать нельзя! Это вызовет формироание очереди на удаление, что займет очень много времени.
 				DB::query(Database::DELETE, "DELETE FROM access 
 					WHERE id_accessname = " . intval($categoryId) . " 
 					AND id_dev = " . intval($deviceId))
