@@ -12,15 +12,23 @@ class Controller_AccessCategory extends Controller_Template {
 		View::bind_global('is_admin', $this->is_admin);
 	}
     
-    public function action_index()
-    {
-        $acList = Model::factory('accessCategory')->getAccessCategoryList();
-        $content = View::factory('accessCategory/index', array(
-            'acList' => $acList,
-        ));
-        $this->template->content = $content;
+ public function action_index()
+{
+    // Получаем режим отображения из GET или сессии
+    $mode = $this->request->query('mode');
+    if ($mode && in_array($mode, ['table', 'tree'])) {
+        Session::instance()->set('access_category_view_mode', $mode);
+    } else {
+        $mode = Session::instance()->get('access_category_view_mode', 'tree'); // по умолчанию дерево
     }
     
+    $acList = Model::factory('accessCategory')->getAccessCategoryList();
+    $content = View::factory('accessCategory/index', array(
+        'acList' => $acList,
+        'view_mode' => $mode,
+    ));
+    $this->template->content = $content;
+}
 		  /**
 		 * Редактирование категории доступа
 		 */
