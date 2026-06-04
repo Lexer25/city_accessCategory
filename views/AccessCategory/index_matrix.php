@@ -1,109 +1,98 @@
-<div class="panel panel-primary">
-    <div class="panel-heading">
-        <h3 class="panel-title">
-            <span class="glyphicon glyphicon-th"></span> 
-            Матрица доступа: точки прохода ↔ категории
-        </h3>
+<!-- Панель инструментов матрицы -->
+<div class="row" style="margin-bottom: 10px;">
+    <div class="col-md-4">
+        <div class="input-group input-group-sm">
+            <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span> Точки:</span>
+            <input type="text" id="filterPoints" class="form-control" placeholder="название точки...">
+        </div>
     </div>
-    <div class="panel-body">
-        
-        <?php 
-        $message = Session::instance()->get_once('message');
-        $message_type = Session::instance()->get_once('message_type', 'info');
-        if ($message): 
-        ?>
-            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade in">
-                <button type="button" class="close" data-dismiss="alert">×</button>
-                <?php echo $message; ?>
-            </div>
+    <div class="col-md-4">
+        <div class="input-group input-group-sm">
+            <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span> Категории:</span>
+            <input type="text" id="filterCategories" class="form-control" placeholder="скрыть остальные...">
+        </div>
+    </div>
+    <div class="col-md-4 text-right">
+        <?php if ($is_admin): ?>
+            <button type="button" id="saveMatrix" class="btn btn-sm btn-primary">
+                <span class="glyphicon glyphicon-save"></span> Сохранить
+            </button>
+            <button type="button" id="resetFilters" class="btn btn-sm btn-default">
+                <span class="glyphicon glyphicon-refresh"></span> Сброс
+            </button>
         <?php endif; ?>
-        
-        <!-- Панель инструментов -->
-        <div class="row" style="margin-bottom: 10px;">
-            <div class="col-md-4">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span> Точки:</span>
-                    <input type="text" id="filterPoints" class="form-control" placeholder="название точки...">
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="input-group input-group-sm">
-                    <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span> Категории:</span>
-                    <input type="text" id="filterCategories" class="form-control" placeholder="скрыть остальные...">
-                </div>
-            </div>
-            <div class="col-md-4 text-right">
-                <?php if ($is_admin): ?>
-                    <button type="button" id="saveMatrix" class="btn btn-sm btn-primary">
-                        <span class="glyphicon glyphicon-save"></span> Сохранить
-                    </button>
-                    <button type="button" id="resetFilters" class="btn btn-sm btn-default">
-                        <span class="glyphicon glyphicon-refresh"></span> Сброс
-                    </button>
-                <?php endif; ?>
-            </div>
-        </div>
-        
-        <!-- Матричная таблица -->
-        <div class="matrix-wrapper">
-            <table class="matrix-table">
-                <thead>
-                    <tr>
-                        <th class="point-col">Точка прохода</th>
-                        <?php foreach ($categories as $category): ?>
-                            <th class="cat-col" data-cat-id="<?php echo $category['id_accessname']; ?>" 
-                                data-cat-name="<?php echo strtolower(htmlspecialchars($category['name'])); ?>">
-                                <div class="cat-title" title="<?php echo htmlspecialchars($category['name']); ?>">
-                                    <?php echo htmlspecialchars(mb_substr($category['name'], 0, 12)); ?>
-                                </div>
-                                <div class="cat-id">ID:<?php echo $category['id_accessname']; ?></div>
-                            </th>
-                        <?php endforeach; ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($allPoints as $point): 
-                        $pointId = $point['id_dev'];
-                        $pointName = htmlspecialchars($point['name']);
-                    ?>
-                        <tr class="point-row" data-point-id="<?php echo $pointId; ?>" 
-                            data-point-name="<?php echo strtolower($pointName); ?>">
-                            <td class="point-col">
-                                <span class="glyphicon glyphicon-tower" style="color: #5bc0de;"></span>
-                                <span class="point-name"><?php echo $pointName; ?></span>
-                                <span class="point-id">(<?php echo $pointId; ?>)</span>
-                             </td>
-                            <?php foreach ($categories as $category): 
-                                $catId = $category['id_accessname'];
-                                $isChecked = in_array($pointId, $categoryPointsMap[$catId]);
-                            ?>
-                                <td class="check-cell" data-cat-id="<?php echo $catId; ?>" data-point-id="<?php echo $pointId; ?>">
-                                    <input type="checkbox" class="access-checkbox" 
-                                           data-point-id="<?php echo $pointId; ?>"
-                                           data-cat-id="<?php echo $catId; ?>"
-                                           <?php echo $isChecked ? 'checked' : ''; ?>
-                                           <?php echo $is_admin ? '' : 'disabled'; ?>>
-                                </td>
-                            <?php endforeach; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Статистика -->
-        <div class="matrix-footer">
-            <span class="glyphicon glyphicon-stats"></span> 
-            Точек: <strong id="statsPoints"><?php echo count($allPoints); ?></strong> | 
-            Категорий: <strong id="statsCats"><?php echo count($categories); ?></strong>
-            <span id="filterStats" class="text-muted"></span>
-        </div>
-        
     </div>
 </div>
 
+<!-- Матричная таблица -->
+<div class="matrix-wrapper">
+    <table class="matrix-table">
+        <thead>
+            <tr>
+                <th class="point-col">Точка прохода</th>
+                <?php foreach ($categories as $category): ?>
+                    <th class="cat-col" data-cat-id="<?php echo $category['id_accessname']; ?>" 
+                        data-cat-name="<?php echo mb_strtolower(htmlspecialchars($category['name']), 'UTF-8'); ?>">
+                        <div class="cat-title" title="<?php echo htmlspecialchars($category['name']); ?>">
+                            <?php echo htmlspecialchars(mb_substr($category['name'], 0, 12)); ?>
+                        </div>
+                        <div class="cat-id">ID:<?php echo $category['id_accessname']; ?></div>
+                    </th>
+                <?php endforeach; ?>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($allPoints as $point): 
+                $pointId = $point['id_dev'];
+                $pointName = htmlspecialchars($point['name']);
+                
+                // Подсчитываем количество категорий, в которые входит эта точка
+                $categoriesCount = 0;
+                foreach ($categories as $category) {
+                    $catId = $category['id_accessname'];
+                    if (in_array($pointId, $categoryPointsMap[$catId])) {
+                        $categoriesCount++;
+                    }
+                }
+            ?>
+                <tr class="point-row" data-point-id="<?php echo $pointId; ?>" 
+                    data-point-name="<?php echo mb_strtolower($pointName, 'UTF-8'); ?>">
+                    <td class="point-col">
+                        <span class="glyphicon glyphicon-tower" style="color: #5bc0de;"></span>
+                        <span class="point-name"><?php echo $pointName; ?></span>
+                        <span class="point-id">(<?php echo $pointId; ?>)</span>
+                        <span class="badge point-categories-count" 
+                              title="Входит в <?php echo $categoriesCount; ?> категорий<?php echo $categoriesCount % 10 == 1 && $categoriesCount % 100 != 11 ? 'у' : ($categoriesCount % 10 >= 2 && $categoriesCount % 10 <= 4 && ($categoriesCount % 100 < 10 || $categoriesCount % 100 >= 20) ? 'и' : ''); ?>">
+                            <?php echo $categoriesCount; ?>
+                        </span>
+                    </td>
+                    <?php foreach ($categories as $category): 
+                        $catId = $category['id_accessname'];
+                        $isChecked = in_array($pointId, $categoryPointsMap[$catId]);
+                    ?>
+                        <td class="check-cell" data-cat-id="<?php echo $catId; ?>" data-point-id="<?php echo $pointId; ?>">
+                            <input type="checkbox" class="access-checkbox" 
+                                   data-point-id="<?php echo $pointId; ?>"
+                                   data-cat-id="<?php echo $catId; ?>"
+                                   <?php echo $isChecked ? 'checked' : ''; ?>
+                                   <?php echo $is_admin ? '' : 'disabled'; ?>>
+                        </td>
+                    <?php endforeach; ?>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+
+<!-- Статистика -->
+<div class="matrix-footer">
+    <span class="glyphicon glyphicon-stats"></span> 
+    Точек: <strong id="statsPoints"><?php echo count($allPoints); ?></strong> | 
+    Категорий: <strong id="statsCats"><?php echo count($categories); ?></strong>
+    <span id="filterStats" class="text-muted"></span>
+</div>
+
 <style>
-/* Контейнер с прокруткой */
 .matrix-wrapper {
     max-height: 480px;
     overflow: auto;
@@ -112,15 +101,14 @@
     background: #fff;
 }
 
-/* Таблица */
 .matrix-table {
     border-collapse: collapse;
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     font-size: 12px;
-    width: 100%;
+    width: auto;
+    min-width: 100%;
 }
 
-/* Заголовки */
 .matrix-table th {
     background: #f5f5f5;
     padding: 8px 6px;
@@ -139,7 +127,7 @@
     padding: 8px 10px;
     font-weight: bold;
     border-right: 1px solid #ddd;
-    min-width: 200px;
+    min-width: 260px;
 }
 
 .matrix-table .cat-title {
@@ -154,7 +142,6 @@
     margin-top: 2px;
 }
 
-/* Ячейки */
 .matrix-table td {
     padding: 0;
     text-align: center;
@@ -181,7 +168,17 @@
     margin-left: 6px;
 }
 
-/* Чекбоксы */
+.matrix-table .point-categories-count {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 10px;
+    background-color: #5bc0de;
+    color: white;
+}
+
 .matrix-table .access-checkbox {
     width: 16px;
     height: 16px;
@@ -195,7 +192,6 @@
     opacity: 0.4;
 }
 
-/* Ячейка с чекбоксом */
 .matrix-table .check-cell {
     width: 30px;
     background-color: #fafafa;
@@ -207,12 +203,15 @@
     background-color: #e8f0fe;
 }
 
-/* Скрытие строк при фильтрации точек */
+/* Подсветка изменений */
+.matrix-table .check-cell.has-changes {
+    background-color: #d4edda !important;
+}
+
 .matrix-table .point-row.filtered-out {
     display: none;
 }
 
-/* Скрытие колонок при фильтрации категорий */
 .matrix-table .cat-col.hide-col {
     display: none;
 }
@@ -221,12 +220,6 @@
     display: none;
 }
 
-/* Подсветка изменений */
-.matrix-table .check-cell.has-changes {
-    background-color: #d4edda !important;
-}
-
-/* Строка при наведении */
 .matrix-table .point-row:hover td {
     background-color: #f9f9f9;
 }
@@ -235,7 +228,6 @@
     background-color: #f9f9f9;
 }
 
-/* Нижняя панель */
 .matrix-footer {
     margin-top: 8px;
     padding: 5px 8px;
@@ -246,7 +238,6 @@
     color: #666;
 }
 
-/* Индикатор сохранения */
 .saving-indicator {
     position: fixed;
     top: 20px;
@@ -281,6 +272,28 @@
 <script>
 $(document).ready(function() {
     
+    // Функция обновления счётчиков категорий для точек
+    function updatePointsCounters() {
+        $('.point-row').each(function() {
+            var $row = $(this);
+            var checkedCount = $row.find('.access-checkbox:checked').length;
+            var $counter = $row.find('.point-categories-count');
+            
+            if ($counter.length) {
+                $counter.text(checkedCount);
+                
+                // Обновляем title
+                var wordEnding = '';
+                if (checkedCount % 10 == 1 && checkedCount % 100 != 11) {
+                    wordEnding = 'у';
+                } else if (checkedCount % 10 >= 2 && checkedCount % 10 <= 4 && (checkedCount % 100 < 10 || checkedCount % 100 >= 20)) {
+                    wordEnding = 'и';
+                }
+                $counter.attr('title', 'Входит в ' + checkedCount + ' категори' + wordEnding);
+            }
+        });
+    }
+    
     // Фильтрация точек (скрываем строки)
     $('#filterPoints').on('keyup', function() {
         var term = $(this).val().toLowerCase().trim();
@@ -299,56 +312,42 @@ $(document).ready(function() {
         $('#statsPoints').text(visibleCount + '/' + $('.point-row').length);
     });
     
-// Фильтрация категорий (скрываем колонки) - улучшенная версия
-$('#filterCategories').on('keyup', function() {
-    var term = $(this).val().toLowerCase().trim();
-    var visibleCount = 0;
-    
-    if (term === '') {
-        // Показываем все колонки
-        $('.cat-col').removeClass('hide-col');
-        $('.check-cell').removeClass('hide-col');
-        visibleCount = $('.cat-col').length;
-    } else {
-        // Проходим по всем категориям
-        $('.cat-col').each(function() {
-            // Берём название из data-cat-name (уже в нижнем регистре)
-            var catName = $(this).data('cat-name') || '';
-            // Также проверяем оригинальное название (для кириллицы)
-            var originalTitle = $(this).find('.cat-title').attr('title') || '';
-            var originalNameLower = originalTitle.toLowerCase();
-            
-            var catId = $(this).data('cat-id');
-            
-            // Проверяем оба варианта
-            var found = (catName.indexOf(term) !== -1) || (originalNameLower.indexOf(term) !== -1);
-            
-            if (found) {
-                // Показываем колонку
-                $(this).removeClass('hide-col');
-                $('.check-cell[data-cat-id="' + catId + '"]').removeClass('hide-col');
-                visibleCount++;
-            } else {
-                // Скрываем колонку
-                $(this).addClass('hide-col');
-                $('.check-cell[data-cat-id="' + catId + '"]').addClass('hide-col');
-            }
-        });
-    }
-    
-    $('#statsCats').text(visibleCount + '/' + $('.cat-col').length);
-});
+    // Фильтрация категорий (скрываем колонки)
+    $('#filterCategories').on('keyup', function() {
+        var term = $(this).val().toLowerCase().trim();
+        var visibleCount = 0;
+        
+        if (term === '') {
+            $('.cat-col').removeClass('hide-col');
+            $('.check-cell').removeClass('hide-col');
+            visibleCount = $('.cat-col').length;
+        } else {
+            $('.cat-col').each(function() {
+                var catName = $(this).data('cat-name') || '';
+                var catId = $(this).data('cat-id');
+                
+                if (catName.indexOf(term) !== -1) {
+                    $(this).removeClass('hide-col');
+                    $('.check-cell[data-cat-id="' + catId + '"]').removeClass('hide-col');
+                    visibleCount++;
+                } else {
+                    $(this).addClass('hide-col');
+                    $('.check-cell[data-cat-id="' + catId + '"]').addClass('hide-col');
+                }
+            });
+        }
+        
+        $('#statsCats').text(visibleCount + '/' + $('.cat-col').length);
+    });
     
     // Сброс всех фильтров
     $('#resetFilters').on('click', function() {
         $('#filterPoints').val('');
         $('#filterCategories').val('');
         
-        // Показываем все строки
         $('.point-row').removeClass('filtered-out');
         $('#statsPoints').text($('.point-row').length + '/' + $('.point-row').length);
         
-        // Показываем все колонки
         $('.cat-col').removeClass('hide-col');
         $('.check-cell').removeClass('hide-col');
         $('#statsCats').text($('.cat-col').length + '/' + $('.cat-col').length);
@@ -359,7 +358,7 @@ $('#filterCategories').on('keyup', function() {
         $(this).closest('.check-cell').data('original-checked', $(this).prop('checked'));
     });
     
-    // Отслеживаем изменения
+    // Отслеживаем изменения с подсветкой
     $('.access-checkbox:enabled').on('change', function() {
         var $cell = $(this).closest('.check-cell');
         var original = $cell.data('original-checked');
@@ -369,6 +368,7 @@ $('#filterCategories').on('keyup', function() {
         } else {
             $cell.removeClass('has-changes');
         }
+        updatePointsCounters();
     });
     
     // Клик по ячейке переключает чекбокс
@@ -431,7 +431,8 @@ $('#filterCategories').on('keyup', function() {
         });
     });
     
-    // Инициализация статистики
+    // Инициализация
+    updatePointsCounters();
     $('#statsPoints').text($('.point-row').length + '/' + $('.point-row').length);
     $('#statsCats').text($('.cat-col').length + '/' + $('.cat-col').length);
 });
