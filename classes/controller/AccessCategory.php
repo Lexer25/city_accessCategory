@@ -390,4 +390,69 @@ public function action_removeAccessPoints()
     
     echo json_encode(array('success' => $result));
 }
+
+/**
+ * AJAX: получить точки прохода для категории
+ */
+public function action_getCategoryDevices()
+{
+    $this->auto_render = false;
+    header('Content-Type: application/json');
+    
+    $categoryId = (int)$this->request->param('id');
+    if (!$categoryId) {
+        echo json_encode(['error' => 'Invalid category ID']);
+        return;
+    }
+    
+    $pointsRaw = Model::factory('accessCategory')->getAccessPointsByCategoryId($categoryId);
+    $grouped = Model::factory('AccessCategory')->groupByDevice($pointsRaw);
+    
+    // Формируем массив для JSON
+    $devices = [];
+    foreach ($grouped as $deviceId => $deviceData) {
+        $devices[] = [
+            'id' => $deviceId,
+            'name' => $deviceData['name'],
+            'timezone_count' => is_array($deviceData['id_timezone']) ? count($deviceData['id_timezone']) : 0,
+            'has_timezones' => !empty($deviceData['id_timezone'])
+        ];
+    }
+    
+    echo json_encode(['success' => true, 'devices' => $devices]);
+}
+
+/**
+ * AJAX: получить временные зоны для устройства в категории
+ */
+public function action_getDeviceTimezones()
+{
+    $this->auto_render = false;
+    header('Content-Type: application/json');
+    
+    $categoryId = (int)$this->request->param('category_id');
+    $deviceId = (int)$this->request->param('device_id');
+    
+    if (!$categoryId || !$deviceId) {
+        echo json_encode(['error' => 'Invalid parameters']);
+        return;
+    }
+    
+    $timezoneIds = Model::factory('accessCategory')->getDeviceTimezones($categoryId, $deviceId);
+    $allTimezones = Model::factory('accessCategory')->getTimezonesList();
+    $timezonesMap = [];
+    foreach ($allTimezones as $tz) {
+        $timezonesMap[$tz['id_timezone']] = $tz['name'];
+    }
+    
+    $timezones = [];
+    foreach ($timezoneIds as $tzId) {
+        $timezones[] = [
+            'id' => $tzId,
+            'name' => isset($timezonesMap[$tzId]) ? $timezonesMap[$tzId] : 'ID: ' . $tzId
+        ];
+    }
+    
+    echo json_encode(['success' => true, 'timezones' => $timezones]);
+}
 }
