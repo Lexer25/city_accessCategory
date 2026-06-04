@@ -1,5 +1,5 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-defined('DOOR_VERSION') OR define('DOOR_VERSION', '1.0.5.0');
+defined('DOOR_VERSION') OR define('DOOR_VERSION', '1.0.5.1');
 
 Kohana::$config->load('menu')
     ->set('accessCategory', array(
@@ -33,3 +33,11 @@ Route::set('accessCategory_getDevices', 'accessCategory/getCategoryDevices/<id>'
 
 Route::set('accessCategory_getTimezones', 'accessCategory/getDeviceTimezones/<category_id>/<device_id>', array('category_id' => '\d+', 'device_id' => '\d+'))
     ->defaults(array('controller' => 'AccessCategory', 'action' => 'getDeviceTimezones'));
+	
+	
+	Route::set('accessCategory_matrix', 'accessCategory/matrix')
+    ->defaults(array('controller' => 'AccessCategory', 'action' => 'matrix'));
+	
+	
+	Route::set('accessCategory_saveMatrix', 'accessCategory/saveMatrixChanges')
+    ->defaults(array('controller' => 'AccessCategory', 'action' => 'saveMatrixChanges'));

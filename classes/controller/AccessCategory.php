@@ -12,24 +12,42 @@ class Controller_AccessCategory extends Controller_Template {
 		View::bind_global('is_admin', $this->is_admin);
 	}
     
- public function action_index()
-{
-    // Получаем режим отображения из GET или сессии
-    $mode = $this->request->query('mode');
-    if ($mode && in_array($mode, ['table', 'tree'])) {
-        Session::instance()->set('access_category_view_mode', $mode);
-    } else {
-        $mode = Session::instance()->get('access_category_view_mode', 'tree'); // по умолчанию дерево
-    }
-    
-    $acList = Model::factory('accessCategory')->getAccessCategoryList();
-    $content = View::factory('accessCategory/index', array(
-        'acList' => $acList,
-        'view_mode' => $mode,
-    ));
-    $this->template->content = $content;
-}
-		  /**
+		public function action_index()
+		{
+			// Получаем режим отображения из GET или сессии
+			$mode = $this->request->query('mode');
+			if ($mode && in_array($mode, array('table', 'tree', 'matrix'))) {
+				Session::instance()->set('access_category_view_mode', $mode);
+			} else {
+				$mode = Session::instance()->get('access_category_view_mode', 'tree');
+			}
+			
+			// Для матричного режима устанавливаем full_width
+			if ($mode == 'matrix') {
+				$this->template->full_width = true;
+			}
+			
+			$acList = Model::factory('accessCategory')->getAccessCategoryList();
+			
+			// Получаем данные для матрицы (нужны для матричного режима)
+			$allPoints = Model::factory('accessCategory')->getAllAccessPoints();
+			$categoryPointsMap = array();
+			foreach ($acList as $category) {
+				$catId = $category['id_accessname'];
+				$categoryPointsMap[$catId] = Model::factory('accessCategory')->getAssignedAccessPointsIds($catId);
+			}
+			
+			$content = View::factory('accessCategory/index', array(
+				'acList' => $acList,
+				'view_mode' => $mode,
+				'allPoints' => $allPoints,
+				'categoryPointsMap' => $categoryPointsMap,
+				'is_admin' => $this->is_admin,
+			));
+			
+			$this->template->content = $content;
+		}
+					  /**
 		 * Редактирование категории доступа
 		 */
 		public function action_edit()
@@ -463,4 +481,131 @@ public function action_getDeviceTimezones()
     
     echo json_encode(['success' => true, 'timezones' => $timezones]);
 }
+
+
+/**
+ * Матрица: категории vs точки прохода
+ */
+public function action_matrix()
+{
+    $mode = $this->request->query('mode');
+    if ($mode && in_array($mode, ['table', 'tree', 'matrix'])) {
+        Session::instance()->set('access_category_view_mode', $mode);
+    } else {
+        $mode = Session::instance()->get('access_category_view_mode', 'matrix');
+    }
+    
+    // Получаем все категории
+    $categories = Model::factory('accessCategory')->getAccessCategoryList();
+    
+    // Получаем все точки прохода (устройства с ридером)
+    $allPoints = Model::factory('accessCategory')->getAllAccessPoints();
+    
+    // Для каждой категории получаем ID привязанных точек
+    $categoryPointsMap = [];
+    foreach ($categories as $category) {
+        $catId = $category['id_accessname'];
+        $assignedIds = Model::factory('accessCategory')->getAssignedAccessPointsIds($catId);
+        $categoryPointsMap[$catId] = $assignedIds;
+    }
+    
+    $content = View::factory('accessCategory/index_matrix', array(
+        'categories' => $categories,
+        'allPoints' => $allPoints,
+        'categoryPointsMap' => $categoryPointsMap,
+        'view_mode' => $mode,
+    ));
+    $this->template->content = $content;
+}
+/**
+ * AJAX: сохранение изменений матрицы (пакетное обновление)
+ */
+public function action_saveMatrixChanges()
+{
+    $this->auto_render = false;
+    header('Content-Type: application/json');
+    
+    if (!$this->is_admin) {
+        echo json_encode(['success' => false, 'error' => 'Доступ запрещён']);
+        return;
+    }
+    
+    if ($this->request->method() != HTTP_Request::POST) {
+        echo json_encode(['success' => false, 'error' => 'Invalid request method']);
+        return;
+    }
+    
+    $rawData = file_get_contents('php://input');
+    $data = json_decode($rawData, true);
+    $changes = isset($data['changes']) ? $data['changes'] : [];
+    
+    if (empty($changes)) {
+        echo json_encode(['success' => true, 'message' => 'Нет изменений']);
+        return;
+    }
+    
+    try {
+        // Получаем подключение к базе данных
+        $db = Database::instance('fb'); // Без параметра, используем стандартное подключение
+		
+        
+        // Или если подключение называется 'fb':
+        // $db = Database::instance('fb');
+        
+        $db->begin();
+        
+        $savedCount = 0;
+        
+        foreach ($changes as $change) {
+            $catId = (int)$change['category_id'];
+            $pointId = (int)$change['point_id'];
+            $shouldExist = (bool)$change['checked'];
+            
+            if ($shouldExist) {
+                // Проверяем, существует ли уже связь
+                $checkSql = "SELECT COUNT(*) as cnt FROM access WHERE id_accessname = {$catId} AND id_dev = {$pointId}";
+                $result = DB::query(Database::SELECT, $checkSql)->execute($db);
+                $exists = false;
+                foreach ($result as $row) {
+                    if ($row['CNT'] > 0) {
+                        $exists = true;
+                        break;
+                    }
+                }
+                
+                if (!$exists) {
+                    // Получаем новый ID
+                    $genResult = DB::query(Database::SELECT, 'SELECT GEN_ID(GEN_ACCESS_ID, 1) as gen FROM RDB$DATABASE')->execute($db);
+                    $newId = 0;
+                    foreach ($genResult as $row) {
+                        $newId = $row['GEN'];
+                        break;
+                    }
+                    
+                    $insertSql = "INSERT INTO access (id_access, id_db, id_accessname, id_dev, id_timezone) 
+                                  VALUES ({$newId}, 1, {$catId}, {$pointId}, NULL)";
+                    DB::query(Database::INSERT, $insertSql)->execute($db);
+                    $savedCount++;
+                }
+            } else {
+                // Удаляем связь
+                $deleteSql = "DELETE FROM access WHERE id_accessname = {$catId} AND id_dev = {$pointId}";
+                DB::query(Database::DELETE, $deleteSql)->execute($db);
+                $savedCount++;
+            }
+        }
+        
+        $db->commit();
+        echo json_encode(['success' => true, 'saved_count' => $savedCount]);
+        
+    } catch (Exception $e) {
+        if (isset($db)) {
+            $db->rollback();
+        }
+        Kohana::$log->add(Log::ERROR, 'Matrix save error: ' . $e->getMessage());
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+    }
+}
+
+
 }
