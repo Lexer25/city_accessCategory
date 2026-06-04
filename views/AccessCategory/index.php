@@ -19,15 +19,21 @@
         <?php endif; ?>
         
         <!-- Верхняя панель с кнопкой добавления -->
-		<?php if ($is_admin){ ?>
+		
         <div class="row" style="margin-bottom: 15px;">
             <div class="col-xs-12">
-                <a href="<?php echo URL::site('accessCategory/add'); ?>" class="btn btn-success">
-                    <span class="glyphicon glyphicon-plus"></span> <?php echo __('Добавить категорию доступа'); ?>
-                </a>
+                <?php if ($is_admin): ?>
+					<a href="<?php echo URL::site('accessCategory/add'); ?>" class="btn btn-success">
+						<span class="glyphicon glyphicon-plus"></span> <?php echo __('Добавить категорию'); ?>
+					</a>
+				<?php else: ?>
+					<span class="btn btn-success disabled" title="<?php echo __('Доступно только администраторам'); ?>">
+						<span class="glyphicon glyphicon-plus"></span> <?php echo __('Добавить категорию'); ?>
+					</span>
+				<?php endif; ?>
             </div>
         </div>
-		<?php };?>
+		
         
         <?php if(isset($acList) && count($acList) > 0): ?>
             
@@ -112,11 +118,20 @@
                                         <a href="<?php echo URL::site('accessCategory/edit/' . Arr::get($category, 'id_accessname')); ?>" class="btn btn-primary" title="<?php echo __('Редактировать'); ?>">
                                             <span class="glyphicon glyphicon-edit"></span>
                                         </a>
+										<div class="btn-group btn-group-xs">
 										<?php if ($is_admin){ ?>
-                                        <a href="<?php echo URL::site('accessCategory/delete/' . Arr::get($category, 'id_accessname')); ?>" class="btn btn-danger" title="<?php echo __('Удалить'); ?>" onclick="return confirm('<?php echo __('Вы уверены, что хотите удалить эту категорию?'); ?>')">
-                                            <span class="glyphicon glyphicon-trash"></span>
-                                        </a>
-										<?php };?>
+											
+												<a href="<?php echo URL::site('accessCategory/delete/' . Arr::get($category, 'id_accessname')); ?>" class="btn btn-danger" onclick="return confirm('<?php echo __('Вы уверены?'); ?>')">
+													<span class="glyphicon glyphicon-trash"></span>
+												</a>
+											
+										<?php } else {?>
+												<span class="btn btn-danger disabled" title="<?php echo __('Доступно только администраторам'); ?>">
+													<span class="glyphicon glyphicon-trash"></span>
+												</span>
+											
+										<?php }; ?>
+										</div>
                                     </div>
                                   </td>
                               </tr>

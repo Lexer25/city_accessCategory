@@ -62,7 +62,8 @@
                                                 <label>
                                                     <input type="checkbox" name="timezones[]" 
                                                            value="<?php echo htmlspecialchars(Arr::get($tz, 'id_timezone')); ?>"
-                                                           <?php echo in_array(Arr::get($tz, 'id_timezone'), $selectedTimezones) ? 'checked' : ''; ?>>
+                                                           <?php echo in_array(Arr::get($tz, 'id_timezone'), $selectedTimezones) ? 'checked' : ''; ?>
+                                                           <?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
                                                     <?php echo htmlspecialchars(Arr::get($tz, 'name')); ?>
                                                 </label>
                                             </div>
@@ -75,21 +76,36 @@
                                     <?php echo __('Можно выбрать несколько временных зон'); ?>
                                 </small>
                             </div>
-                            <?php if ($is_admin){ ?>
+                            
                             <div class="form-group">
-                                <button type="submit" class="btn btn-primary">
-                                    <span class="glyphicon glyphicon-save"></span> <?php echo __('Сохранить'); ?>
-                                </button>
-                                <a href="<?php echo URL::site('accessCategory/edit/' . $categoryId); ?>" class="btn btn-default">
-                                    <span class="glyphicon glyphicon-ban-circle"></span> <?php echo __('Отмена'); ?>
-                                </a>
+                                <?php if ($is_admin): ?>
+                                    <button type="submit" class="btn btn-primary">
+                                        <span class="glyphicon glyphicon-save"></span> <?php echo __('Сохранить'); ?>
+                                    </button>
+                                    <a href="<?php echo URL::site('accessCategory/edit/' . $categoryId); ?>" class="btn btn-default">
+                                        <span class="glyphicon glyphicon-ban-circle"></span> <?php echo __('Отмена'); ?>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="btn btn-primary disabled" title="<?php echo __('Доступно только администраторам'); ?>">
+                                        <span class="glyphicon glyphicon-save"></span> <?php echo __('Сохранить'); ?>
+                                    </span>
+                                    <a href="<?php echo URL::site('accessCategory/edit/' . $categoryId); ?>" class="btn btn-default">
+                                        <span class="glyphicon glyphicon-ban-circle"></span> <?php echo __('Отмена'); ?>
+                                    </a>
+                                <?php endif; ?>
                             </div>
-							<?php }; ?>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <?php if (!$is_admin): ?>
+            <div class="alert alert-info text-center" style="margin-top: 15px;">
+                <span class="glyphicon glyphicon-lock"></span> 
+                <?php echo __('Режим только для просмотра. Для редактирования временных зон необходимы права администратора.'); ?>
+            </div>
+        <?php endif; ?>
         
     </div>
 </div>

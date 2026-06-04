@@ -90,13 +90,14 @@
                                     ?>
                                 </select>
                             </div>
-							<?php if ($is_admin){ ?>
+							
                             <div class="col-md-4">
-                                <button type="button" id="addSelectedPoints" class="btn btn-success btn-block" style="margin-top: 60px;">
-                                    <span class="glyphicon glyphicon-arrow-right"></span> <?php echo __('Добавить выбранные'); ?>
-                                </button>
+                                <button type="button" id="addSelectedPoints" class="btn btn-success btn-block" 
+									<?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
+									<span class="glyphicon glyphicon-arrow-right"></span> <?php echo __('Добавить выбранные'); ?>
+								</button>
                             </div>
-							<?php } ?>
+							
                         </div>
                         <div class="row" style="margin-top: 10px;">
                             <div class="col-md-12">
@@ -113,13 +114,14 @@
                     <div class="panel-heading">
                         <h4 class="panel-title">
                             <?php echo __('Точки прохода в категории'); ?>
-							<?php if ($is_admin){ ?>
+							
                             <div class="btn-group pull-right">
-                                <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger">
-                                    <span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
-                                </button>
+                                <button type="button" id="removeSelectedPoints" class="btn btn-xs btn-danger"
+									<?php echo $is_admin ? '' : 'disabled title="' . __('Доступно только администраторам') . '"'; ?>>
+									<span class="glyphicon glyphicon-remove"></span> <?php echo __('Удалить выбранные'); ?>
+								</button>
                             </div>
-							<?php }; ?>
+							
                         </h4>
                     </div>
                     <div class="panel-body" style="padding: 0;">
