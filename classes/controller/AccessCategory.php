@@ -2,15 +2,51 @@
 
 class Controller_AccessCategory extends Controller_Template { 
 
-   public function before()
-	{
-		parent::before();
-		$session = Session::instance();
+public function before()
+{
+    parent::before();
+    $session = Session::instance();
 
-		// Передаем в шаблон флаг авторизации
-		$this->is_admin = Auth::instance()->logged_in('admin');
-		View::bind_global('is_admin', $this->is_admin);
-	}
+    // Передаем в шаблон флаг авторизации
+    $this->is_admin = Auth::instance()->logged_in('admin');
+    View::bind_global('is_admin', $this->is_admin);
+    
+    // ========== ВРЕМЕННОЕ ОТКЛЮЧЕНИЕ МЕТОДОВ ЗАПИСИ ==========
+    // Глобальный флаг отключения записи (true - отключено, false - работает)
+    $disable_write_actions = true;  // <-- Меняйте здесь для включения/отключения
+    
+    if ($disable_write_actions) {
+        // Список методов, которые временно запрещены
+        $disabled_actions = array(
+            'add',
+            'edit',
+            'delete',
+            'addAccessPoints',
+            'removeAccessPoints',
+            'editTimezones',
+            'saveMatrixChanges',
+        );
+        
+        $current_action = $this->request->action();
+        
+        if (in_array($current_action, $disabled_actions)) {
+            if ($this->request->is_ajax()) {
+                $this->auto_render = false;
+                header('Content-Type: application/json');
+                echo json_encode(array(
+                    'success' => false, 
+                    'error' => 'Сохранение временно отключено администратором'
+                ));
+                exit;
+            }
+            
+            Session::instance()->set('message', 'Редактирование временно отключено администратором');
+            Session::instance()->set('message_type', 'warning');
+            $this->redirect('accessCategory');
+        }
+    }
+    // ========== КОНЕЦ БЛОКА ==========
+}
     
 		public function action_index()
 		{
