@@ -30,19 +30,61 @@
         <thead>
             <tr>
                 <th class="point-col">Точка прохода</th>
-                <?php foreach ($categories as $category): ?>
+                <?php foreach ($categories as $category): 
+                    // Подсчитываем количество точек прохода в этой категории
+                    $pointsInCategory = 0;
+                    foreach ($allPoints as $point) {
+                        $pointId = $point['id_dev'];
+                        if (in_array($pointId, $categoryPointsMap[$category['id_accessname']])) {
+                            $pointsInCategory++;
+                        }
+                    }
+                    $pointsBadgeClass = $pointsInCategory == 0 ? 'count-zero' : '';
+                    $pointsBadgeColor = $pointsInCategory == 0 ? '#ffc107' : '#5bc0de';
+                    $pointsBadgeTextColor = $pointsInCategory == 0 ? '#856404' : 'white';
+                ?>
                     <th class="cat-col" data-cat-id="<?php echo $category['id_accessname']; ?>" 
                         data-cat-name="<?php echo mb_strtolower(htmlspecialchars($category['name']), 'UTF-8'); ?>">
-                        <div class="cat-title" title="<?php echo htmlspecialchars($category['name']); ?>">
-                            <?php echo htmlspecialchars(mb_substr($category['name'], 0, 12)); ?>
-                        </div>
-                        <div class="cat-id">ID:<?php echo $category['id_accessname']; ?></div>
+                        <a href="<?php echo URL::site('accessCategory/edit/' . $category['id_accessname']); ?>" 
+                           class="cat-link" 
+                           title="Редактировать категорию: <?php echo htmlspecialchars($category['name']); ?>">
+                            <div class="cat-title">
+                                <?php echo htmlspecialchars(mb_substr($category['name'], 0, 12)); ?>
+                            </div>
+                            <div class="cat-id">
+                                ID:<?php echo $category['id_accessname']; ?>
+                                <span class="cat-points-count <?php echo $pointsBadgeClass; ?>" 
+                                      style="background-color: <?php echo $pointsBadgeColor; ?>; color: <?php echo $pointsBadgeTextColor; ?>;"
+                                      title="Точек прохода в категории: <?php echo $pointsInCategory; ?>">
+                                    <?php echo $pointsInCategory; ?>
+                                </span>
+                            </div>
+                        </a>
                     </th>
                 <?php endforeach; ?>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($allPoints as $point): 
+            <?php 
+            // Предварительно загружаем все временные зоны для всех пар (категория, точка)
+            $timezonesCache = array();
+            foreach ($categories as $category) {
+                $catId = $category['id_accessname'];
+                foreach ($allPoints as $point) {
+                    $pointId = $point['id_dev'];
+                    $timezones = Model::factory('accessCategory')->getDeviceTimezones($catId, $pointId);
+                    $timezonesCache[$catId . '_' . $pointId] = $timezones;
+                }
+            }
+            
+            // Получаем список всех временных зон с названиями
+            $allTimezones = Model::factory('accessCategory')->getTimezonesList();
+            $timezonesMap = array();
+            foreach ($allTimezones as $tz) {
+                $timezonesMap[$tz['id_timezone']] = htmlspecialchars($tz['name']);
+            }
+            
+            foreach ($allPoints as $point): 
                 $pointId = $point['id_dev'];
                 $pointName = htmlspecialchars($point['name']);
                 
@@ -54,6 +96,10 @@
                         $categoriesCount++;
                     }
                 }
+                
+                $badgeClass = $categoriesCount == 0 ? 'count-zero' : '';
+                $badgeColor = $categoriesCount == 0 ? '#ffc107' : '#5bc0de';
+                $badgeTextColor = $categoriesCount == 0 ? '#856404' : 'white';
             ?>
                 <tr class="point-row" data-point-id="<?php echo $pointId; ?>" 
                     data-point-name="<?php echo mb_strtolower($pointName, 'UTF-8'); ?>">
@@ -61,7 +107,8 @@
                         <span class="glyphicon glyphicon-tower" style="color: #5bc0de;"></span>
                         <span class="point-name"><?php echo $pointName; ?></span>
                         <span class="point-id">(<?php echo $pointId; ?>)</span>
-                        <span class="badge point-categories-count" 
+                        <span class="badge point-categories-count <?php echo $badgeClass; ?>" 
+                              style="background-color: <?php echo $badgeColor; ?>; color: <?php echo $badgeTextColor; ?>;"
                               title="Входит в <?php echo $categoriesCount; ?> категорий<?php echo $categoriesCount % 10 == 1 && $categoriesCount % 100 != 11 ? 'у' : ($categoriesCount % 10 >= 2 && $categoriesCount % 10 <= 4 && ($categoriesCount % 100 < 10 || $categoriesCount % 100 >= 20) ? 'и' : ''); ?>">
                             <?php echo $categoriesCount; ?>
                         </span>
@@ -69,13 +116,31 @@
                     <?php foreach ($categories as $category): 
                         $catId = $category['id_accessname'];
                         $isChecked = in_array($pointId, $categoryPointsMap[$catId]);
+                        $timezones = isset($timezonesCache[$catId . '_' . $pointId]) ? $timezonesCache[$catId . '_' . $pointId] : array();
+                        $timezonesNames = array();
+                        foreach ($timezones as $tzId) {
+                            if (isset($timezonesMap[$tzId])) {
+                                $timezonesNames[] = $timezonesMap[$tzId];
+                            }
+                        }
                     ?>
                         <td class="check-cell" data-cat-id="<?php echo $catId; ?>" data-point-id="<?php echo $pointId; ?>">
-                            <input type="checkbox" class="access-checkbox" 
-                                   data-point-id="<?php echo $pointId; ?>"
-                                   data-cat-id="<?php echo $catId; ?>"
-                                   <?php echo $isChecked ? 'checked' : ''; ?>
-                                   <?php echo $is_admin ? '' : 'disabled'; ?>>
+                            <div class="cell-content">
+                                <input type="checkbox" class="access-checkbox" 
+                                       data-point-id="<?php echo $pointId; ?>"
+                                       data-cat-id="<?php echo $catId; ?>"
+                                       <?php echo $isChecked ? 'checked' : ''; ?>
+                                       <?php echo $is_admin ? '' : 'disabled'; ?>>
+                                <?php if (!empty($timezonesNames)): ?>
+                                    <div class="timezones-list">
+                                        <?php foreach ($timezonesNames as $tzName): ?>
+                                            <span class="timezone-badge" title="<?php echo $tzName; ?>">
+                                                <?php echo htmlspecialchars(mb_substr($tzName, 0, 6)); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                         </td>
                     <?php endforeach; ?>
                 </tr>
@@ -130,6 +195,23 @@
     min-width: 260px;
 }
 
+/* Ссылка на редактирование категории */
+.matrix-table .cat-link {
+    display: block;
+    color: #333;
+    text-decoration: none;
+    transition: color 0.1s;
+}
+
+.matrix-table .cat-link:hover {
+    color: #337ab7;
+    text-decoration: underline;
+}
+
+.matrix-table .cat-link:hover .cat-id {
+    color: #337ab7;
+}
+
 .matrix-table .cat-title {
     font-weight: bold;
     font-size: 11px;
@@ -140,6 +222,23 @@
     font-size: 9px;
     color: #999;
     margin-top: 2px;
+}
+
+/* Счётчик точек в категории */
+.matrix-table .cat-points-count {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: bold;
+    border-radius: 10px;
+    background-color: #5bc0de;
+    color: white;
+}
+
+.matrix-table .cat-points-count.count-zero {
+    background-color: #ffc107;
+    color: #856404;
 }
 
 .matrix-table td {
@@ -168,6 +267,7 @@
     margin-left: 6px;
 }
 
+/* Счётчик категорий для точки */
 .matrix-table .point-categories-count {
     display: inline-block;
     margin-left: 8px;
@@ -179,10 +279,24 @@
     color: white;
 }
 
+.matrix-table .point-categories-count.count-zero {
+    background-color: #ffc107;
+    color: #856404;
+}
+
+/* Содержимое ячейки */
+.matrix-table .cell-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 4px;
+    gap: 4px;
+}
+
 .matrix-table .access-checkbox {
     width: 16px;
     height: 16px;
-    margin: 10px 0;
+    margin: 0;
     cursor: pointer;
     vertical-align: middle;
 }
@@ -192,8 +306,33 @@
     opacity: 0.4;
 }
 
+/* Список временных зон */
+.matrix-table .timezones-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    max-width: 100px;
+}
+
+.matrix-table .timezone-badge {
+    display: inline-block;
+    padding: 1px 3px;
+    font-size: 8px;
+    font-weight: normal;
+    background-color: #e8f0fe;
+    color: #333;
+    border-radius: 3px;
+    white-space: nowrap;
+    cursor: help;
+}
+
+.matrix-table .timezone-badge:hover {
+    background-color: #d0e0f8;
+}
+
 .matrix-table .check-cell {
-    width: 30px;
+    min-width: 80px;
     background-color: #fafafa;
     cursor: pointer;
     transition: background 0.1s;
@@ -282,7 +421,17 @@ $(document).ready(function() {
             if ($counter.length) {
                 $counter.text(checkedCount);
                 
-                // Обновляем title
+                // Обновляем класс и стили для подсветки нуля
+                if (checkedCount == 0) {
+                    $counter.addClass('count-zero');
+                    $counter.css('background-color', '#ffc107');
+                    $counter.css('color', '#856404');
+                } else {
+                    $counter.removeClass('count-zero');
+                    $counter.css('background-color', '#5bc0de');
+                    $counter.css('color', 'white');
+                }
+                
                 var wordEnding = '';
                 if (checkedCount % 10 == 1 && checkedCount % 100 != 11) {
                     wordEnding = 'у';
@@ -290,6 +439,32 @@ $(document).ready(function() {
                     wordEnding = 'и';
                 }
                 $counter.attr('title', 'Входит в ' + checkedCount + ' категори' + wordEnding);
+            }
+        });
+    }
+    
+    // Функция обновления счётчиков категорий
+    function updateCategoryCounters() {
+        $('.cat-col').each(function() {
+            var $catCol = $(this);
+            var catId = $catCol.data('cat-id');
+            var checkedCount = $('.check-cell[data-cat-id="' + catId + '"] .access-checkbox:checked').length;
+            var $counter = $catCol.find('.cat-points-count');
+            
+            if ($counter.length) {
+                $counter.text(checkedCount);
+                
+                if (checkedCount == 0) {
+                    $counter.addClass('count-zero');
+                    $counter.css('background-color', '#ffc107');
+                    $counter.css('color', '#856404');
+                } else {
+                    $counter.removeClass('count-zero');
+                    $counter.css('background-color', '#5bc0de');
+                    $counter.css('color', 'white');
+                }
+                
+                $counter.attr('title', 'Точек прохода в категории: ' + checkedCount);
             }
         });
     }
@@ -369,11 +544,14 @@ $(document).ready(function() {
             $cell.removeClass('has-changes');
         }
         updatePointsCounters();
+        updateCategoryCounters();
     });
     
-    // Клик по ячейке переключает чекбокс
+    // Клик по ячейке переключает чекбокс (но не по ссылке и не по временным зонам)
     $(document).on('click', '.check-cell', function(e) {
         if ($(e.target).is('input')) return;
+        if ($(e.target).hasClass('timezone-badge')) return;
+        if ($(e.target).closest('.cat-link').length) return;
         var $checkbox = $(this).find('.access-checkbox:enabled');
         if ($checkbox.length) {
             $checkbox.prop('checked', !$checkbox.prop('checked')).trigger('change');
@@ -433,6 +611,7 @@ $(document).ready(function() {
     
     // Инициализация
     updatePointsCounters();
+    updateCategoryCounters();
     $('#statsPoints').text($('.point-row').length + '/' + $('.point-row').length);
     $('#statsCats').text($('.cat-col').length + '/' + $('.cat-col').length);
 });
