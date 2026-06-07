@@ -448,7 +448,7 @@ public function addAccessPoints($categoryId, $points)
 						$result[$id][$timezoneKey] = array_values(array_unique($result[$id][$timezoneKey]));
 					}
 				} else {
-					$result[$id][$timezoneKey] = null;
+					//$result[$id][$timezoneKey] = null;
 				}
 			}
 			
