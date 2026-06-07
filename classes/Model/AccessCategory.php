@@ -152,10 +152,7 @@ class Model_AccessCategory extends Model
         return $ids;
     }
     
-    /**
-     * Сохранить точки прохода для категории
-     */
-    public function saveAccessPoints($id_accessname, $selectedPoints)
+  public function saveAccessPoints($id_accessname, $selectedPoints)
     {
         try {
             // Начинаем транзакцию
