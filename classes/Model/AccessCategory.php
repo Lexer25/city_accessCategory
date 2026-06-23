@@ -68,6 +68,10 @@ class Model_AccessCategory extends Model
     public function getAccessCategoryList()
     {
         $sql = 'SELECT an.id_accessname, an.name, an.time_stamp FROM accessname an';
+		
+		$sql='SELECT an.id_accessname, an.name, an.time_stamp, count(ssa.id_pep) as peoplecount FROM accessname an
+				left join ss_accessuser ssa on an.id_accessname=ssa.id_accessname
+				group by  an.id_accessname, an.name, an.time_stamp, ssa.id_accessname';
 
         $query = DB::query(Database::SELECT, $sql)
             ->execute(Database::instance('fb'))
@@ -81,9 +85,11 @@ class Model_AccessCategory extends Model
      */
     public function getAccessCategoryById($id)
     {
-        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp
+        $sql = 'SELECT an.id_accessname, an.name, an.time_stamp, count(ssa.id_pep) as peoplecount
                 FROM accessname an 
-                WHERE an.id_accessname = ' . intval($id);
+				left join ss_accessuser ssa on an.id_accessname=ssa.id_accessname
+                WHERE an.id_accessname = ' . intval($id).'
+				group by an.id_accessname, an.name, an.time_stamp';
 
         $query = DB::query(Database::SELECT, $sql)
             ->execute(Database::instance('fb'))

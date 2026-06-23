@@ -1,5 +1,5 @@
 <?php defined('SYSPATH') or die('No direct script access.');
-defined('ACCESSCATEGORY_VERSION') OR define('ACCESSCATEGORY_VERSION', '1.0.1');
+defined('ACCESSCATEGORY_VERSION') OR define('ACCESSCATEGORY_VERSION', '1.0.2');
 
 Kohana::$config->load('menu')
     ->set('accessCategory', array(

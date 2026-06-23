@@ -3,6 +3,9 @@
         <h3 class="panel-title">
             <span class="glyphicon glyphicon-th-list"></span> 
             Категории доступа
+		
+				<?php if(isset($acList) && count($acList) > 0) echo  '('.count($acList).')'?>
+			
         </h3>
     </div>
     <div class="panel-body">

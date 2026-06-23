@@ -20,7 +20,7 @@ if ($message):
                     <th width="5%">ID <span class="glyphicon glyphicon-sort"></span></th>
                     <th width="25%"><?php echo __('Название категории'); ?> <span class="glyphicon glyphicon-sort"></span></th>
                     <th width="15%"><?php echo __('Дата создания'); ?> <span class="glyphicon glyphicon-sort"></span></th>
-                    <th width="25%"><?php echo __('GUID'); ?> <span class="glyphicon glyphicon-sort"></span></th>
+                    <th width="25%"><?php echo __('Контактов'); ?> <span class="glyphicon glyphicon-sort"></span></th>
                     <th width="20%"><?php echo __('Точки прохода'); ?></th>
                     <th width="10%"><?php echo __('Действия'); ?></th>
                 </tr>
@@ -28,7 +28,7 @@ if ($message):
                     <th><input type="text" id="filterId" class="form-control input-sm" placeholder="<?php echo __('Поиск по ID...'); ?>"></th>
                     <th><input type="text" id="filterName" class="form-control input-sm" placeholder="<?php echo __('Поиск по названию...'); ?>"></th>
                     <th><input type="text" id="filterDate" class="form-control input-sm" placeholder="<?php echo __('Поиск по дате...'); ?>"></th>
-                    <th><input type="text" id="filterGuid" class="form-control input-sm" placeholder="<?php echo __('Поиск по GUID...'); ?>"></th>
+                    <th><input type="text" id="filterGuid" class="form-control input-sm" placeholder="<?php echo __('Поиск...'); ?>"></th>
                     <th><input type="text" id="filterPoints" class="form-control input-sm" placeholder="<?php echo __('Поиск по точкам прохода...'); ?>"></th>
                     <th><button type="button" id="resetFilters" class="btn btn-default btn-sm btn-block" title="<?php echo __('Сбросить фильтры'); ?>"><span class="glyphicon glyphicon-refresh"></span></button></th>
                 </tr>
@@ -51,7 +51,7 @@ if ($message):
                         <td><?php echo htmlspecialchars(Arr::get($category, 'id_accessname')); ?></td>
                         <td><?php echo htmlspecialchars(Arr::get($category, 'name')); ?></td>
                         <td><?php echo htmlspecialchars(Arr::get($category, 'time_stamp')); ?></td>
-                        <td><?php echo htmlspecialchars(Arr::get($category, 'guid')); ?></td>
+                        <td><?php echo htmlspecialchars(Arr::get($category, 'peoplecount')); ?></td>
                         <td>
                             <?php if(count($accessPoints) > 0): ?>
                                 <div class="dropdown">

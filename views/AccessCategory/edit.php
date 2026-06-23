@@ -40,6 +40,14 @@
                                    value="<?php echo htmlspecialchars(Arr::get($category, 'guid')); ?>" 
                                    disabled>
                         </div>
+						
+                        <div class="form-group">
+                            <label for="guid"><?php echo __('Контактов'); ?></label>
+                            <input type="text" class="form-control" id="peoplecount" name="peoplecount" 
+                                   value="<?php echo htmlspecialchars(Arr::get($category, 'peoplecount')); ?>" 
+                                   disabled>
+                        </div>
+						
                         
                         <div class="form-group">
                             <label for="time_stamp"><?php echo __('Дата создания'); ?></label>
