@@ -6,7 +6,7 @@ Kohana::$config->load('adm')
         'title' => 'Категории доступа',
         'url' => 'accessCategory',
         'icon' => 'fa-cog',
-        'order' => 100,
+        'order' => 40,
        
     ));
 	
