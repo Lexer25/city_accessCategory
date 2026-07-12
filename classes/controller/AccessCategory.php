@@ -60,7 +60,7 @@ public function before()
 			
 			// Для матричного режима устанавливаем full_width
 			if ($mode == 'matrix') {
-				$this->template->full_width = true;
+				$this->set_full_width(true);
 			}
 			
 			$acList = Model::factory('accessCategory')->getAccessCategoryList();
@@ -89,7 +89,7 @@ public function before()
 		public function action_edit()
 		{
 
-			//$this->template->full_width = true;
+			//$this->set_full_width(true);
 			$id = $this->request->param('id');
 			
 			if ($id === NULL) {
