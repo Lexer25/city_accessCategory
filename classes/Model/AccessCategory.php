@@ -247,6 +247,149 @@ class Model_AccessCategory extends Model
     }
     
     /**
+     * Выдать доступ к категории доступа в таблицу ACCESSUSER.
+     *
+     * Делаются две вставки:
+     *  1) для служебного пользователя id_pep = 1;
+     *  2) для текущего авторизованного пользователя — id_pep из параметра,
+     *     а если он не передан, то по логину из Auth (people.login).
+     * Уже существующие связи (id_pep, id_accessname) пропускаются.
+     *
+     * @param  int $id_pep        id_pep текущего администратора (может быть NULL)
+     * @param  int $id_accessname id_accessname категории доступа
+     * @return bool
+     */
+    public function addACCESSUSER($id_pep = NULL, $id_accessname = NULL)
+    {
+        $id_accessname = (int) $id_accessname;
+
+        if ($id_accessname <= 0)
+        {
+            Kohana::$log->add(Log::ERROR, 'addACCESSUSER: не передан id_accessname');
+            return false;
+        }
+
+        if (empty($id_pep))
+        {
+            $id_pep = $this->getCurrentIdPep();
+        }
+
+        $id_pep = (int) $id_pep;
+
+        // id_pep = 1 — служебный пользователь, доступ получает всегда
+        $pepIds = array(1);
+
+        if ($id_pep > 0 AND $id_pep !== 1)
+        {
+            $pepIds[] = $id_pep;
+        }
+
+        $db = Database::instance('fb');
+
+        $result = true;
+
+        foreach ($pepIds as $pepId)
+        {
+            try
+            {
+                // Проверяем, нет ли уже такой связи: UNQ_ACCESSUSER не даст вставить дубль
+                $sql = "SELECT id_pep FROM accessuser
+                        WHERE id_pep = " . $pepId . "
+                        AND id_accessname = " . $id_accessname;
+
+                $exists = DB::query(Database::SELECT, $sql)
+                    ->execute($db)
+                    ->as_array();
+
+                if ( ! empty($exists))
+                {
+                    Kohana::$log->add(Log::DEBUG, 'addACCESSUSER: связь уже есть, id_pep=' . $pepId . ', id_accessname=' . $id_accessname);
+                    continue;
+                }
+
+                // ID_ACCESSUSER генерирует BEFORE INSERT триггер ACCESSUSER_CREATE_ID (GEN_ACCESSUSER_ID)
+                $sql = "INSERT INTO accessuser (id_db, id_pep, id_accessname)
+                        VALUES (1, " . $pepId . ", " . $id_accessname . ")";
+
+                Kohana::$log->add(Log::DEBUG, 'addACCESSUSER sql ' . $sql);
+
+                DB::query(Database::INSERT, $sql)
+                    ->execute($db);
+            }
+            catch (Exception $e)
+            {
+                Kohana::$log->add(Log::ERROR, 'addACCESSUSER: id_pep=' . $pepId . ', id_accessname=' . $id_accessname . ' — ' . $e->getMessage());
+                $result = false;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * id_pep текущего авторизованного пользователя.
+     *
+     * Драйвер Auth (File) хранит в сессии логин, поэтому id_pep ищем
+     * в people по колонке login. Если драйвер вернёт объект/массив с id_pep,
+     * берём значение из него.
+     *
+     * @return int|null
+     */
+    private function getCurrentIdPep()
+    {
+        if ( ! class_exists('Auth') OR ! Auth::instance()->logged_in())
+        {
+            return NULL;
+        }
+
+        $user = Auth::instance()->get_user();
+
+        if (is_object($user) AND isset($user->id_pep))
+        {
+            return (int) $user->id_pep;
+        }
+
+        if (is_array($user) AND isset($user['id_pep']))
+        {
+            return (int) $user['id_pep'];
+        }
+
+        // Драйвер File отдаёт логин
+        $login = is_string($user) ? trim($user) : '';
+
+        if ($login === '')
+        {
+            return NULL;
+        }
+
+        $loginForDb = addslashes($login);
+
+        // TRIM/RTRIM драйвер ODBC (Gemini InterBase) не поддерживает — только UPPER
+        $sql = "SELECT FIRST 1 id_pep FROM people
+                WHERE UPPER(login) = UPPER('" . $loginForDb . "')";
+
+        try
+        {
+            $query = DB::query(Database::SELECT, $sql)
+                ->execute(Database::instance('fb'))
+                ->as_array();
+
+            if ( ! empty($query) AND isset($query[0]['ID_PEP']))
+            {
+                return (int) $query[0]['ID_PEP'];
+            }
+
+            Kohana::$log->add(Log::ERROR, 'addACCESSUSER: в people не найден id_pep для логина ' . $login);
+        }
+        catch (Exception $e)
+        {
+            Kohana::$log->add(Log::ERROR, 'addACCESSUSER: не удалось определить id_pep по логину ' . $login . ' — ' . $e->getMessage());
+        }
+
+        return NULL;
+    }
+
+    /**
      * Удалить категорию доступа
      */
     public function deleteAccessCategory($id)

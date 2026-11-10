@@ -269,6 +269,13 @@ public function before()
                 $result = Model::factory('accessCategory')->addAccessCategory($name, $guid);
                 
                 if ($result) {
+                    // Выдаём доступ к новой категории: id_pep = 1 и текущему авторизованному пользователю
+                    $accessUserResult = Model::factory('accessCategory')->addACCESSUSER(NULL, $result);
+                    
+                    if ( ! $accessUserResult) {
+                        Kohana::$log->add(Log::ERROR, 'Не удалось выдать доступ ACCESSUSER для категории id_accessname=' . $result);
+                    }
+                    
                     Session::instance()->set('message', __('Категория доступа успешно добавлена'));
                     Session::instance()->set('message_type', 'success');
                 } else {
